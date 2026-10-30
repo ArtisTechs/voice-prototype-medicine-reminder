@@ -24,6 +24,8 @@ COPY scripts/download_models.py /tmp/download_models.py
 RUN python /tmp/download_models.py
 
 FROM base AS runtime
+# Weights are baked in at /opt/models; never call the Hugging Face Hub at runtime.
+ENV HF_HUB_OFFLINE=1
 RUN groupadd -g 10001 app && useradd -u 10001 -g app -m -d /home/app app \
  && mkdir -p /data/scans && chown -R app:app /data
 COPY --from=deps /opt/venv /opt/venv

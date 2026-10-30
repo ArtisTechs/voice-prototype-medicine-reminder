@@ -50,7 +50,9 @@ async def scan(db: AsyncSession, device_ident: str | None, data: bytes, content_
     await run_in_threadpool(storage.write_bytes, rel, data)
 
     meds = await med_repo.list_for_patient(db, device.patient_id)
-    candidates = [pipeline.Candidate(id=m.id, label=m.label, barcode=m.barcode) for m in meds]
+    candidates = [
+        pipeline.Candidate(id=m.id, label=m.label, barcode=m.barcode, name=m.name, strength=m.strength) for m in meds
+    ]
     ids = [m.id for m in meds]
 
     async def lookup(vec: list[float]) -> list[tuple[int, float]]:

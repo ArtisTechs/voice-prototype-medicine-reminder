@@ -89,3 +89,12 @@ One entry per decision. Format: **context**, **choice**, **why**. Newest at the 
 - **Context:** Installing `expo-dev-client` makes `expo start` default to development-build mode, and the QR code then does not open in Expo Go.
 - **Choice:** The start script passes `--go` unless `EXPO_CLIENT=dev-client`.
 - **Why:** The spec requires Expo Go to work for everything except remote push.
+
+## D19. Vision thresholds and eval samples
+- **Context:** On the synthetic set, correct embedding matches score 0.92–0.96 and unregistered boxes at most 0.65. Blank boxes with no print score about 0.43 against everything.
+- **Choice:** Thresholds stay as specified (OCR ≥ 80 with an 8-point margin; embedding ≥ 0.85 with a 0.03 margin). The eval set uses "blurry" photos instead of blank boxes. A plain box that can only be told apart by color is correctly "not found".
+- **Why:** A wrong "identified" is worse than "not found". Eval: 14 samples, 85.7% accuracy, 0 wrong medicines, p50 0.66 s, max 1.8 s (budget 8.5 s). Add real camera photos to `tests/vision_samples/` for real numbers.
+
+## D20. Claude fallback request shape
+- **Choice:** `AsyncAnthropic` with `max_retries=0` and the timeout set to the time left in the scan budget. Model `claude-sonnet-5-5` with `effort: low`, structured output (a JSON schema `enum` of candidate ids + `"none"`), and server-side refusal fallback (`fallbacks: "default"`). Every error or refusal counts as "none".
+- **Why:** The answer has to fit the 10 s camera limit, and the schema makes it impossible to name a medicine outside the patient's list.

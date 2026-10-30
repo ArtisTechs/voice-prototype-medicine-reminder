@@ -24,6 +24,10 @@ async def lifespan(app: FastAPI):
         from app.vision import models
 
         await models.load_models()
+        from app.services import reference_service
+
+        async with session_scope() as db:
+            await reference_service.backfill_embeddings(db)
     yield
     await close_redis()
     await dispose_engine()

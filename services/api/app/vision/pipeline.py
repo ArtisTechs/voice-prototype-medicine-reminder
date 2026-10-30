@@ -28,6 +28,8 @@ class Candidate:
     id: int
     label: str
     barcode: str | None = None
+    name: str = ""
+    strength: str | None = None
 
 
 @dataclass

@@ -4,7 +4,7 @@
 
 Writes:
   app/seed_assets/<Medicine>/{front,back,side}.jpg     reference photos used by the seed
-  tests/vision_samples/<Medicine>/*.jpg                 eval set (barcode, text-only, look-only, rotated)
+  tests/vision_samples/<Medicine>/*.jpg                 eval set (barcode, text-only, blurry, rotated)
   tests/vision_samples/none/*.jpg                       packages that are not registered
   ../../tools/device-sim/samples/*.jpg                  what the simulator "photographs"
 Replace or extend these with real camera photos for real accuracy numbers."""
@@ -13,6 +13,8 @@ import argparse
 from pathlib import Path
 
 from app.seed import DEMO_MEDICINES
+from PIL import ImageFilter
+
 from tests.imaging import jpeg, package
 
 COLORS = {"Losartan": (40, 110, 180), "Metformin": (200, 70, 40), "Amlodipine": (60, 150, 80)}
@@ -44,7 +46,9 @@ def main() -> None:
         save(evald / "barcode.jpg", package(name, strength, code=code, color=color, seed=11))
         save(evald / "text_only.jpg", package(name, strength, code=None, color=color, seed=12, angle=3))
         save(evald / "rotated.jpg", package(name, strength, code=code, color=color, seed=13, angle=90))
-        save(evald / "look_only.jpg", package(name, strength, code=None, color=color, seed=14, show_text=False))
+        # Out of focus: barcode and text unreadable, the package design still recognisable (embedding stage).
+        blurry = package(name, strength, code=code, color=color, seed=14, angle=-3).filter(ImageFilter.GaussianBlur(7))
+        save(evald / "blurry.jpg", blurry)
 
         save(sim_dir / f"{name.lower()}.jpg", package(name, strength, code=code, color=color, seed=21, angle=2))
 
