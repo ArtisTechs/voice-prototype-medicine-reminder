@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+data/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+Thumbs.db
