@@ -13,7 +13,7 @@ description: Use when changing Docker Compose services, Dockerfiles, dev vs prod
 | api | `services/api` target `runtime` | **0.0.0.0:5000** | `entrypoint.sh`: wait for db → `alembic upgrade head` → seed if `SEED_DEMO=true` → uvicorn; healthcheck `/healthz` |
 | worker | same image | none | `command: python -m app.worker`, `VISION_ENABLED=false`, depends on api healthy (migrations done) |
 | mobile (dev) | `apps/mobile` Dockerfile | 8081 (+19000-19002 legacy) | `npx expo start --lan`, `REACT_NATIVE_PACKAGER_HOSTNAME=${LAN_IP}` |
-| adminer (dev) | `adminer:4.8.1` | 127.0.0.1:8080 | dev only |
+| adminer (dev) | `adminer:4.8.1` | 127.0.0.1:8089 (`ADMINER_PORT`) | dev only |
 | caddy (prod) | `caddy:2.8-alpine` | 80, 443 | HTTPS → api:5000 for the app; ESP32 still uses http://LAN:5000 |
 
 ## Compose files

@@ -1,0 +1,87 @@
+# Dev overrides: hot reload, adminer, Expo dev server, test runner.
+x-dev-build: &dev-build
+  context: ./services/api
+  target: dev
+
+services:
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  api:
+    build: *dev-build
+    image: medrem/api:dev
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload", "--reload-dir", "app"]
+    environment:
+      ENABLE_DOCS: "true"
+      SEED_DEMO: ${SEED_DEMO:-true}
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - ./services/api/app:/srv/app
+      - ./services/api/migrations:/srv/migrations
+      - ./services/api/tests:/srv/tests
+      - ./services/api/scripts:/srv/scripts
+
+  worker:
+    build: *dev-build
+    image: medrem/api:dev
+    volumes:
+      - ./services/api/app:/srv/app
+
+  api-test:
+    profiles: ["test"]
+    build: *dev-build
+    image: medrem/api:dev
+    entrypoint: []
+    command: ["pytest", "-q"]
+    env_file: .env
+    environment:
+      ENV: test
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medrem}:${POSTGRES_PASSWORD:-medrem}@db:5432/medrem_test
+      REDIS_URL: redis://redis:6379/15
+      SCAN_DIR: /tmp/scans
+      SEED_DEMO: "false"
+      EXPO_PUSH_ENABLED: "false"
+      VISION_LLM_FALLBACK: "false"
+    volumes:
+      - ./services/api/app:/srv/app
+      - ./services/api/migrations:/srv/migrations
+      - ./services/api/tests:/srv/tests
+      - ./services/api/scripts:/srv/scripts
+      - ./services/api/pyproject.toml:/srv/pyproject.toml:ro
+      - ./tools/device-sim:/sim
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  mobile:
+    build:
+      context: ./apps/mobile
+    env_file: .env
+    environment:
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${LAN_IP:?Set LAN_IP in .env to this PC's WiFi IPv4}
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://${LAN_IP}:5000}
+      EXPO_TUNNEL: ${EXPO_TUNNEL:-false}
+      CHOKIDAR_USEPOLLING: "true"
+      CI: "false"
+    ports:
+      - "0.0.0.0:8081:8081"
+    volumes:
+      - ./apps/mobile:/app
+      - mobile_node_modules:/app/node_modules
+    stdin_open: true
+    tty: true
+
+  adminer:
+    image: adminer:4.8.1
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8089}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      - db
+
+volumes:
+  mobile_node_modules:

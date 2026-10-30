@@ -50,3 +50,18 @@ One entry per decision. Format: **context**, **choice**, **why**. Newest at the 
 - **Context:** The development PC has no GNU make.
 - **Choice:** The Makefile only wraps `docker compose` commands. `docs/setup.md` explains how to install make (`winget install ezwinports.make`) or run the same commands directly.
 - **Why:** Nothing needs make beyond being a convenience.
+
+## D11. Expo SDK 58 layout
+- **Context:** The SDK 58 template keeps routes in `src/app/`. The skill first said `app/`.
+- **Choice:** Routes are in `apps/mobile/src/app/`, and `package.json` `main` is `expo-router/entry`. The `mobile-expo` skill is updated to match.
+- **Why:** This follows the current Expo default, so the docs and tooling line up.
+
+## D12. Port clashes on the dev PC
+- **Context:** Another local project already publishes host ports 5000/5001 and 8080.
+- **Choice:** The API host port is `${API_PORT:-5000}` (the default stays 5000 for the firmware), and Adminer moved to `${ADMINER_PORT:-8089}`.
+- **Why:** The firmware needs 5000, so the default never changes. The override only lets development run beside other stacks. Free port 5000 before connecting the real pillbox.
+
+## D13. Scan answers for unpaired cameras
+- **Context:** `X-Device` may be missing or unknown.
+- **Choice:** 403 `device_not_registered`, the same as the other device endpoints. Any paired id (pillbox or camera) is accepted on `/api/scan`.
+- **Why:** This keeps the rules consistent. The firmware shows a scan failure either way.

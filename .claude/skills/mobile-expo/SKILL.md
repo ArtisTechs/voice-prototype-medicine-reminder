@@ -7,17 +7,18 @@ description: Use when writing code in apps/mobile (Expo SDK 58 + TypeScript + Ex
 
 ## Layout
 ```
-apps/mobile/
-  app/_layout.tsx              providers: Theme, QueryClient, Auth, Realtime; auth gate
-  app/(auth)/sign-in.tsx  sign-up.tsx
-  app/(app)/(tabs)/_layout.tsx index.tsx (Dashboard) alerts.tsx settings.tsx
-  app/(app)/patients/new.tsx  join.tsx
-  app/(app)/patients/[patientId]/index.tsx      Today timeline + links
-  app/(app)/patients/[patientId]/medicines/index.tsx  new.tsx  [medicineId].tsx
-  app/(app)/patients/[patientId]/history.tsx  device.tsx  scans.tsx  share.tsx
+apps/mobile/                   (SDK 58: routes live in src/app, package.json main = "expo-router/entry")
+  src/app/_layout.tsx          providers: Theme, QueryClient, Auth, Realtime; Stack.Protected auth guard
+  src/app/sign-in.tsx  sign-up.tsx
+  src/app/(app)/(tabs)/_layout.tsx index.tsx (Dashboard) alerts.tsx settings.tsx
+  src/app/(app)/patients/new.tsx  join.tsx
+  src/app/(app)/patients/[patientId]/index.tsx      Today timeline + links
+  src/app/(app)/patients/[patientId]/medicines/new.tsx  [medicineId].tsx
+  src/app/(app)/patients/[patientId]/history.tsx  device.tsx  scans.tsx  share.tsx  medicines.tsx
   src/api/client.ts   keys.ts   types.ts   hooks/*.ts
   src/auth/  src/realtime/  src/notifications/  src/theme/  src/components/  src/features/  src/lib/
 ```
+Routes stay thin. SDK 58 router: no `initialRouteName` (use `unstable_settings = { anchor }`), no `redirect` prop on `Screen` (render `<Redirect>`), auth via `<Stack.Protected guard={...}>`.
 Routes stay thin. They compose `src/features/<area>/*` components.
 
 ## API client (`src/api/client.ts`)
@@ -57,12 +58,12 @@ qk.scans(id)                    ['patient', id, 'scans']
 - It works in Expo Go (plain WebSocket). New alerts also show an in-app toast/banner.
 
 ## Notifications
-- `expo-notifications`. Ask for permission after sign-in (with a short explainer first), get `getExpoPushTokenAsync({projectId})`, and `POST /api/v1/me/push-tokens`.
+- `expo-notifications`. Handler returns `shouldShowBanner`/`shouldShowList` (`shouldShowAlert` is deprecated). Create the Android channel **before** requesting the token. Ask for permission after sign-in (with a short explainer first), get `getExpoPushTokenAsync({projectId})`, and `POST /api/v1/me/push-tokens`.
 - **Expo Go on Android cannot receive remote push (SDK 53+).** Use the dev client: `npx expo install expo-dev-client`, `eas build --profile development --platform android`, then `npx expo start --dev-client`. In Expo Go, skip registration quietly; in-app alerts still arrive over WebSocket.
 - Android channel `alerts` with importance HIGH. A tap on a notification deep-links to `data.url` (e.g. `/patients/3`).
 
 ## Camera
-- `expo-camera` `CameraView`. Barcode: `barcodeScannerSettings={{barcodeTypes:['ean13','ean8','upc_a','upc_e','code128','qr']}}`, take the first result, then close. Reference photo: `takePictureAsync({quality:0.7})`, then resize to ≤1280 px with `expo-image-manipulator`, then upload.
+- `expo-camera` `CameraView`. Barcode: `barcodeScannerSettings={{barcodeTypes:['ean13','ean8','upc_a','upc_e','code128','qr']}}`, take the first result, then close. Reference photo: `takePictureAsync({quality:0.7})`, then resize to ≤1280 px with `ImageManipulator.manipulate(uri).resize({width:1280}).renderAsync()` → `saveAsync({format: SaveFormat.JPEG, compress: 0.8})` (`manipulateAsync` is deprecated in SDK 58), then upload.
 - Always handle permission denied with a plain explanation and a "Type it instead" fallback.
 
 ## Docker / phone
@@ -72,4 +73,4 @@ qk.scans(id)                    ['patient', id, 'scans']
 - `node_modules` lives in a container volume, so run `make mobile-sh` and then `npx expo install <pkg>` to add packages.
 
 ## Tests
-Jest (`jest-expo` preset) + `@testing-library/react-native`. Test zod schemas, `qk`, the client refresh logic (mock fetch), and key components (`StatusBadge` shows icon + word).
+Jest 30 (`jest-expo` preset) + `@testing-library/react-native` 14 (`await render(...)`). Test zod schemas, `qk`, the client refresh logic (mock fetch), and key components (`StatusBadge` shows icon + word).

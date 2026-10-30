@@ -1,0 +1,71 @@
+[project]
+name = "medrem-api"
+version = "0.1.0"
+description = "Medicine reminder backend: caregiver API, ESP32 device API, worker"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.162,<0.163",
+    "uvicorn[standard]>=0.54,<0.55",
+    "sqlalchemy[asyncio]>=2.1,<2.2",
+    "asyncpg>=0.32,<0.33",
+    "alembic>=1.20,<1.21",
+    "pydantic>=2.14,<2.15",
+    "pydantic-settings>=2.16,<2.17",
+    "email-validator>=2.2",
+    "pyjwt>=2.15,<2.16",
+    "argon2-cffi>=25.1",
+    "redis>=8.1,<8.2",
+    "httpx>=0.28,<0.29",
+    "apscheduler>=3.11,<4",
+    "pgvector>=0.5,<0.6",
+    "pillow>=13.0,<14",
+    "numpy>=2.0",
+    "python-multipart>=0.0.32",
+    "tzdata>=2025.2",
+    "zxing-cpp>=3.1,<3.2",
+    "rapidocr-onnxruntime>=1.4.4,<1.5",
+    "onnxruntime>=1.31,<1.32",
+    "rapidfuzz>=3.14,<3.15",
+    "open-clip-torch>=3.3,<3.4",
+    "torch>=2.15,<2.16",
+    "torchvision>=0.29,<0.30",
+    "anthropic>=2.3,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2,<10",
+    "pytest-asyncio>=1.4,<1.5",
+    "time-machine>=3.6",
+    "ruff>=0.14",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-p no:cacheprovider"
+markers = ["vision: needs the vision models loaded (slow)"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC"]
+ignore = ["B008"]
