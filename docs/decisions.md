@@ -65,3 +65,17 @@ One entry per decision. Format: **context**, **choice**, **why**. Newest at the 
 - **Context:** `X-Device` may be missing or unknown.
 - **Choice:** 403 `device_not_registered`, the same as the other device endpoints. Any paired id (pillbox or camera) is accepted on `/api/scan`.
 - **Why:** This keeps the rules consistent. The firmware shows a scan failure either way.
+
+## D14. Adherence and "expired" doses
+- **Context:** The spec defines adherence as taken ÷ (taken + missed). The device can also report `expired` doses.
+- **Choice:** Adherence = (on time + late) ÷ (on time + late + missed + expired). Expired doses count as not taken. Days with no data show `null` ("–" in the app).
+- **Why:** An expired dose was not taken correctly, so leaving it out would overstate adherence.
+
+## D15. Today status before the device reports
+- **Context:** The timeline must be live even if an event is late or missing.
+- **Choice:** Without an intake record, a dose is `upcoming` before its time, `due` for up to 35 minutes after it, and then `missed`. An expired medicine shows `expired` instead of upcoming/due. A record always wins.
+- **Why:** It matches the device's 30-minute window plus the fallback job (D8).
+
+## D16. WebSocket authorization scope
+- **Choice:** The socket subscribes to the caregiver's patient channels when it connects, and again on `patients.changed`. A caregiver removed from a patient stops getting hints after reconnecting (at most until the next app restart or token refresh).
+- **Why:** The messages only carry ids (no health data), and every refetch is still authorized by the REST API.
