@@ -121,6 +121,7 @@ async def history(db: AsyncSession, patient_id: int, start: date | None, end: da
             setattr(bucket, status, getattr(bucket, status) + 1)
         records.append(
             HistoryRecord(
+                schedule_id=r.schedule_id,
                 date=r.dose_date,
                 time=r.scheduled_time.strftime("%H:%M"),
                 medicine_id=r.medicine_id,

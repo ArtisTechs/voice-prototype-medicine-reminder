@@ -113,6 +113,7 @@ export type History = {
   days: (Totals & { date: string })[];
   medicines: (Totals & { medicineId: number; medicineName: string })[];
   records: {
+    scheduleId: number | null;
     date: string;
     time: string;
     medicineId: number;

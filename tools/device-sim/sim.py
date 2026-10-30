@@ -99,13 +99,39 @@ class Sim:
         print(f"  (app API login unavailable: {status}; alert checks skipped)")
         return False
 
-    def today_status(self) -> dict[int, str]:
+    def patient_id(self) -> int | None:
         status, pats, _ = self.http.call("GET", "/api/v1/patients")
-        if status != 200 or not pats:
-            return {}
-        pid = pats[0]["id"]
+        return pats[0]["id"] if status == 200 and pats else None
+
+    def today_status(self, pid: int) -> dict[int, str]:
         status, today, _ = self.http.call("GET", f"/api/v1/patients/{pid}/today")
         return {d["scheduleId"]: d["status"] for d in today.get("doses", [])} if status == 200 else {}
+
+    def recorded(self, pid: int, day) -> set[int]:
+        status, hist, _ = self.http.call("GET", f"/api/v1/patients/{pid}/history?from={day}&to={day}")
+        return {r["scheduleId"] for r in hist.get("records", [])} if status == 200 else set()
+
+    def pick_day(self, doses):
+        """Today if two doses are still upcoming/due; otherwise the next day with no records for them
+        (so the walk-through works at any time of day and can be re-run)."""
+        today = ph_now().date()
+        pid = self.patient_id() if self.http.token else None
+        if pid is None:
+            return today, [d for d in doses if d["expiry"] >= today.isoformat()]
+        live = self.today_status(pid)
+        for offset in range(0, 15):
+            day = today + timedelta(days=offset)
+            done = self.recorded(pid, day)
+            pending = [
+                d for d in doses
+                if d["id"] not in done and d["expiry"] and d["expiry"] >= day.isoformat()
+                and (offset > 0 or live.get(d["id"], "upcoming") in ("upcoming", "due"))
+            ]
+            if len(pending) >= 2:
+                if offset:
+                    print(f"  (today's doses are already done; simulating {day.isoformat()})")
+                return day, pending
+        return today, []
 
     def wait_alert(self, type_: str, since_ids: set[int], seconds=5.0):
         end = time.monotonic() + seconds
@@ -130,13 +156,10 @@ class Sim:
         self.check(len(doses) > 0, "schedule has doses (run `make seed`)")
         if not doses:
             return
-        today = ph_now().date()
         logged_in = self.login()
-        status_by_id = self.today_status() if logged_in else {}
-        pending = [d for d in doses if status_by_id.get(d["id"], "upcoming") in ("upcoming", "due")
-                   and d["expiry"] and d["expiry"] >= today.isoformat()]
+        today, pending = self.pick_day(doses)
         if len(pending) < 2:
-            print("  Not enough untaken, unexpired doses left today. Run `make reset-seed` and try again.")
+            print("  Not enough untaken, unexpired doses. Run `make reset-seed` and try again.")
             self.failures += 1
             return
         a, b = pending[0], pending[1]
@@ -145,7 +168,7 @@ class Sim:
             hh, mm = map(int, dose["time"].split(":"))
             return datetime(today.year, today.month, today.day, hh, mm) + timedelta(minutes=minutes, seconds=time.time() % 60)
 
-        print(f"-> Dose {a['id']} ({a['name']}, slot {a['slot']}, {a['time']}) becomes due, lid opened after 3 min")
+        print(f"-> {today} dose {a['id']} ({a['name']}, slot {a['slot']}, {a['time']}) becomes due, lid opened after 3 min")
         s, body, _ = self.event("due", a["id"], a["slot"], at(a))
         self.check(s == 200, "due accepted", body)
         s, body, _ = self.event("taken", a["id"], a["slot"], at(a, 3))

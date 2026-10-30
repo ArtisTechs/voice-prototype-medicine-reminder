@@ -33,6 +33,7 @@ class TodayOut(ApiModel):
 
 
 class HistoryRecord(ApiModel):
+    schedule_id: int | None
     date: date
     time: str
     medicine_id: int
