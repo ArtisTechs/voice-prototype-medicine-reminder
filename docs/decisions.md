@@ -79,3 +79,13 @@ One entry per decision. Format: **context**, **choice**, **why**. Newest at the 
 ## D16. WebSocket authorization scope
 - **Choice:** The socket subscribes to the caregiver's patient channels when it connects, and again on `patients.changed`. A caregiver removed from a patient stops getting hints after reconnecting (at most until the next app restart or token refresh).
 - **Why:** The messages only carry ids (no health data), and every refetch is still authorized by the REST API.
+
+## D17. Expo dev server in Docker on Windows: sync instead of bind-mount watching
+- **Context:** Docker Desktop delivers no inotify events for Windows-path bind mounts, even for writes made inside the container. Metro never saw edits.
+- **Choice:** `apps/mobile` is mounted read-only at `/host`. `scripts/poll-sync.js` copies it into the container's own `/app` and polls mtimes every second, so Metro watches a normal Linux filesystem. `make test-mobile` runs the sync once before Jest.
+- **Why:** Hot reload works with no WSL setup and no change to Metro, and it also works on macOS/Linux.
+
+## D18. Expo Go is the default client
+- **Context:** Installing `expo-dev-client` makes `expo start` default to development-build mode, and the QR code then does not open in Expo Go.
+- **Choice:** The start script passes `--go` unless `EXPO_CLIENT=dev-client`.
+- **Why:** The spec requires Expo Go to work for everything except remote push.

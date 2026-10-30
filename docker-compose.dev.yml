@@ -64,12 +64,13 @@ services:
       REACT_NATIVE_PACKAGER_HOSTNAME: ${LAN_IP:?Set LAN_IP in .env to this PC's WiFi IPv4}
       EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://${LAN_IP}:5000}
       EXPO_TUNNEL: ${EXPO_TUNNEL:-false}
-      CHOKIDAR_USEPOLLING: "true"
+      EXPO_CLIENT: ${EXPO_CLIENT:-go}
       CI: "false"
     ports:
       - "0.0.0.0:8081:8081"
     volumes:
-      - ./apps/mobile:/app
+      # Read-only source; docker-start.sh syncs it into /app so Metro's watcher works on Windows.
+      - ./apps/mobile:/host:ro
       - mobile_node_modules:/app/node_modules
     stdin_open: true
     tty: true

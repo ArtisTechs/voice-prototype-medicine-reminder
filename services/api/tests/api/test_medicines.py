@@ -121,3 +121,28 @@ async def test_days_left_and_refill_low_stock(client, ctx):
     m = (await client.patch(f"/api/v1/patients/{ctx['pid']}/medicines/{med['id']}", json={"qty": 6},
                             headers=ctx["h"])).json()
     assert m["daysLeft"] == 3.0 and m["lowStock"] is True
+
+
+async def test_reference_photos(client, ctx):
+    from tests.imaging import jpeg, package
+
+    med = (await create(client, ctx)).json()
+    url = f"/api/v1/patients/{ctx['pid']}/medicines/{med['id']}/photos"
+    files = {"file": ("front.jpg", jpeg(package("Losartan", "50mg")), "image/jpeg")}
+    r = await client.post(url, files=files, data={"angle": "front"}, headers=ctx["h"])
+    assert r.status_code == 201
+    photo = r.json()
+    assert photo["angle"] == "front" and photo["url"].endswith(f"/photos/{photo['id']}/image")
+    img = await client.get(photo["url"], headers=ctx["h"])
+    assert img.status_code == 200 and img.content[:3] == b"\xff\xd8\xff"
+    assert (await client.get(photo["url"])).status_code == 401
+    lst = (await client.get(url, headers=ctx["h"])).json()
+    assert [p["id"] for p in lst] == [photo["id"]]
+    m = (await client.get(f"/api/v1/patients/{ctx['pid']}/medicines/{med['id']}", headers=ctx["h"])).json()
+    assert m["photoCount"] == 1
+    bad = await client.post(url, files={"file": ("x.txt", b"hello", "text/plain")}, headers=ctx["h"])
+    assert bad.status_code == 415
+    bad_angle = await client.post(url, files=files, data={"angle": "top"}, headers=ctx["h"])
+    assert bad_angle.status_code == 400
+    assert (await client.delete(f"{url}/{photo['id']}", headers=ctx["h"])).status_code == 204
+    assert (await client.get(url, headers=ctx["h"])).json() == []

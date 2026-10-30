@@ -50,7 +50,7 @@ test-contract:
 	$(DEV) run --rm api-test pytest -q tests/contract
 
 test-mobile:
-	$(DEV) run --rm --no-deps mobile npm test -- --ci
+	$(DEV) run --rm --no-deps mobile sh -c "node /host/scripts/poll-sync.js --once && npm test -- --ci"
 
 sim:           ## full-day walk-through against the running stack
 	$(DEV) run --rm --no-deps -w /sim api-test python sim.py --base http://api:5000 day

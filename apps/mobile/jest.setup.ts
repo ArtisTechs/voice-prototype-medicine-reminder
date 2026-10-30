@@ -1,3 +1,6 @@
+// React 19 + RNTL 14: let act() flush updates.
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 // Native modules that have no JS implementation in Jest.
 const mockStore = new Map<string, string>();
 
