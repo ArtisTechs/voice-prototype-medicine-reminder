@@ -29,9 +29,7 @@ export function FieldShell({ label, helper, error, children, trailing }: FieldSh
           </AppText>
         </View>
       ) : helper ? (
-        <AppText variant="caption" muted>
-          {helper}
-        </AppText>
+        <AppText muted>{helper}</AppText>
       ) : null}
     </View>
   );

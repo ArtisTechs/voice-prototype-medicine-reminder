@@ -1,0 +1,60 @@
+# Production overrides: no hot reload, no adminer/Expo, HTTPS for the app via Caddy.
+# The ESP32s keep using plain HTTP on the LAN at http://<server LAN IP>:5000 (firmware is fixed).
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build   (make prod-up)
+
+x-restart: &restart
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  db:
+    <<: *restart
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  redis:
+    <<: *restart
+    deploy:
+      resources:
+        limits: { memory: 256m }
+
+  api:
+    <<: *restart
+    environment:
+      ENV: prod
+      ENABLE_DOCS: "false"
+      SEED_DEMO: "false"
+    deploy:
+      resources:
+        limits: { memory: 3g }
+
+  worker:
+    <<: *restart
+    environment:
+      ENV: prod
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+  caddy:
+    <<: *restart
+    image: caddy:2.8-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env for HTTPS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

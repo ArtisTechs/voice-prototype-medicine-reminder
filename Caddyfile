@@ -1,0 +1,19 @@
+# HTTPS for the caregiver app (automatic certificates for APP_DOMAIN).
+# Only the app API, its WebSocket and the health check are exposed; the ESP32 paths
+# (/api/schedule, /api/scan, /api/events) stay LAN-only on port 5000.
+{$APP_DOMAIN} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+	@app path /api/v1/* /healthz
+	handle @app {
+		reverse_proxy api:5000
+	}
+	handle {
+		respond 404
+	}
+}

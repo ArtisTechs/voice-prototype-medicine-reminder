@@ -13,10 +13,10 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text,
         headerTitleStyle: { fontSize: 20, fontWeight: '600' },
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, minHeight: 64 },
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, minHeight: 68 },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: { fontSize: 14, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 16, fontWeight: '600' },
         tabBarItemStyle: { paddingVertical: 4 },
       }}
     >

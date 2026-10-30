@@ -14,10 +14,10 @@ description: Use when working on the worker container, APScheduler jobs, alert r
 
 ## Alert model
 `alerts(id, user_id, patient_id, type, severity, title, body, data jsonb, dedup_key, read_at, pushed_at, created_at)`, unique `(user_id, dedup_key)`.
-`alert_service.raise_alert(db, patient_id, type, dedup_key, title, body, data)`:
-1. Load the patient's caregivers. Skip those whose prefs turn this type off.
-2. `INSERT ... ON CONFLICT (user_id, dedup_key) DO NOTHING RETURNING id`. Only new rows continue.
-3. Commit. Then `publish(patient_id, "alert.created", {...})` and `LPUSH push:queue <alert_id>` for each new row.
+`alert_service.raise_alert(db, patient, type, dedup_key, title, body, data, med)` -> `Created`:
+1. Load the patient's caregivers. Skip those whose prefs turn this type off. `{med}` in the text becomes the medicine label, or "a medicine" when `hide_medicine_names` is on.
+2. `INSERT ... ON CONFLICT (user_id, dedup_key) DO NOTHING RETURNING id`. Only new rows are returned. **No commit**, because it runs in the caller's transaction.
+3. The caller commits, then calls `alert_service.dispatch(created)`, which publishes `alert.created` and `LPUSH push:queue <alert_id>` for each new row. Rule helpers (`missed`, `low_stock`, `expiry`, ...) wrap `raise_alert`; jobs return `Created` and the `job()` wrapper dispatches it.
 
 ## Rules and dedup keys
 | type | trigger | where | dedup_key | default pref |

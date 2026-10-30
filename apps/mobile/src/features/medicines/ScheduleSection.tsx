@@ -8,7 +8,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ChoiceGroup, TimeField } from '../../components/Fields';
 import { Banner, errorMessage } from '../../components/States';
-import { DAY_LONG, DAY_NAMES, fmtClock } from '../../lib/format';
+import { DAY_NAMES, fmtClock } from '../../lib/format';
 import { spacing } from '../../theme/tokens';
 
 const ALL = [0, 1, 2, 3, 4, 5, 6];
@@ -82,9 +82,6 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
             onToggle={(d) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort()))}
             choices={ALL.map((d) => ({ value: d, label: DAY_NAMES[d], hint: undefined }))}
           />
-          <AppText variant="caption" muted accessibilityElementsHidden>
-            {days.map((d) => DAY_LONG[d]).join(', ')}
-          </AppText>
           <Button title="Save time" onPress={save} loading={m.add.isPending || m.update.isPending} />
           <Button title="Cancel" variant="ghost" onPress={() => setEditing(null)} />
         </Card>

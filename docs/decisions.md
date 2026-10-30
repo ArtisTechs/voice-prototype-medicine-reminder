@@ -98,3 +98,7 @@ One entry per decision. Format: **context**, **choice**, **why**. Newest at the 
 ## D20. Claude fallback request shape
 - **Choice:** `AsyncAnthropic` with `max_retries=0` and the timeout set to the time left in the scan budget. Model `claude-sonnet-5-5` with `effort: low`, structured output (a JSON schema `enum` of candidate ids + `"none"`), and server-side refusal fallback (`fallbacks: "default"`). Every error or refusal counts as "none".
 - **Why:** The answer has to fit the 10 s camera limit, and the schema makes it impossible to name a medicine outside the patient's list.
+
+## D21. Milestone 7 review results
+- **UI/UX checklist:** run on every screen. Every data screen has a skeleton, an empty state, and an error state with retry. Every color pair passes WCAG AA in both themes (`__tests__/contrast.test.ts`, 36 checks). Every status shows icon + word. Touch targets are at least 48 dp. Form helper text moved from 14 pt to body size and tab labels to 16 pt. Font scaling is never disabled, and layouts wrap instead of clipping.
+- **Security checklist:** a test proves every `/api/v1` route needs a caregiver except an explicit public list, and every `/patients/{id}` route checks the link (404). A grep of the logs after a full `make sim` found no emails, names, medicine names, or tokens. `.env` is untracked. Containers run as non-root. Prod has no Adminer, docs, or reload, and Caddy exposes only `/api/v1` + `/healthz`.

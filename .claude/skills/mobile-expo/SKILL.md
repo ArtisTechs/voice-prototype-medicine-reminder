@@ -67,10 +67,10 @@ qk.scans(id)                    ['patient', id, 'scans']
 - Always handle permission denied with a plain explanation and a "Type it instead" fallback.
 
 ## Docker / phone
-- `make up` starts `mobile` (`node:22`), which runs `npx expo start --lan --port 8081`. `REACT_NATIVE_PACKAGER_HOSTNAME=${LAN_IP}` makes the QR code point at the PC.
+- `make up` starts `mobile` (`node:22`), which runs `npx expo start --lan --port 8081 --go` (Expo Go; `EXPO_CLIENT=dev-client` switches to the dev build). Edits sync from `/host` into `/app` every second (D17). `REACT_NATIVE_PACKAGER_HOSTNAME=${LAN_IP}` makes the QR code point at the PC.
 - On the phone: install **Expo Go** (it must support SDK 58), use the same WiFi, scan the QR code from `make logs-mobile`, or enter `exp://<LAN_IP>:8081`.
 - LAN blocked (guest WiFi / AP isolation): set `EXPO_TUNNEL=true` in `.env` (runs `--tunnel` through ngrok).
-- `node_modules` lives in a container volume, so run `make mobile-sh` and then `npx expo install <pkg>` to add packages.
+- `node_modules` lives in a container volume. Add packages on the host with `npx expo install <pkg>` (this updates the lockfile); the container runs `npm ci` when `package-lock.json` changes.
 
 ## Tests
 Jest 30 (`jest-expo` preset) + `@testing-library/react-native` 14 (`await render(...)`). Test zod schemas, `qk`, the client refresh logic (mock fetch), and key components (`StatusBadge` shows icon + word).
