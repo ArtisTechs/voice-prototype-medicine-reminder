@@ -6,6 +6,7 @@ import { useAlertMutations, useAlerts, useMe } from '../../../api/hooks';
 import type { Alert } from '../../../api/types';
 import { AppText } from '../../../components/AppText';
 import { Button } from '../../../components/Button';
+import { IconCircle } from '../../../components/Decor';
 import { Screen } from '../../../components/Screen';
 import { CardSkeleton, EmptyState, ErrorState } from '../../../components/States';
 import { ago } from '../../../lib/format';
@@ -22,13 +23,13 @@ const ICON: Record<Alert['type'], keyof typeof Ionicons.glyphMap> = {
   scan_unknown: 'help-circle',
 };
 
-const TONE: Record<Alert['type'], 'missed' | 'taken' | 'lowStock' | 'expired' | 'offline' | 'due'> = {
+const TONE: Record<Alert['type'], 'missed' | 'taken' | 'lowStock' | 'expired' | 'due'> = {
   missed: 'missed',
   taken: 'taken',
   low_stock: 'lowStock',
   expiry: 'expired',
   expired_dose: 'expired',
-  offline: 'offline',
+  offline: 'missed',
   scan_unknown: 'due',
 };
 
@@ -41,9 +42,9 @@ function AlertRow({ a, onOpen }: { a: Alert; onOpen: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={`${unread ? 'New. ' : ''}${a.title}. ${a.body}. ${ago(a.createdAt)}.`}
       onPress={onOpen}
-      style={[styles.row, { backgroundColor: colors.surface, borderColor: unread ? tone.fg : colors.border, borderWidth: unread ? 2 : 1 }]}
+      style={[styles.row, { backgroundColor: unread ? tone.bg : colors.surface, borderColor: unread ? tone.fg : 'transparent', borderWidth: unread ? 2 : 1 }]}
     >
-      <Ionicons name={ICON[a.type]} size={28} color={tone.fg} />
+      <IconCircle icon={ICON[a.type]} tone={TONE[a.type]} size={44} />
       <View style={styles.text}>
         <View style={styles.titleRow}>
           <AppText variant="bodyStrong" style={styles.flex}>
@@ -82,7 +83,7 @@ export default function Alerts() {
       ) : q.isError ? (
         <ErrorState error={q.error} onRetry={q.refetch} />
       ) : items.length === 0 ? (
-        <EmptyState icon="notifications-off-outline" title="No alerts" message="You will see missed doses, low stock and pillbox problems here." />
+        <EmptyState icon="notifications-off-outline" title="No alerts" message="You will see missed doses, low stock and VOICE problems here." />
       ) : (
         <>
           {unread > 0 ? (

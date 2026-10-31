@@ -20,7 +20,7 @@ import { spacing } from '../../../../theme/tokens';
 const code = z
   .string()
   .trim()
-  .min(2, 'Enter the code shown on the pillbox.')
+  .min(2, 'Enter the code shown on VOICE.')
   .max(32, 'Use 32 characters or fewer.')
   .regex(/^[A-Za-z0-9_-]+$/, 'Use only letters, numbers, - or _.');
 const schema = z.object({ deviceId: code, cameraId: z.union([code, z.literal('')]) });
@@ -43,19 +43,19 @@ function PairForm({ pid, initial }: { pid: number; initial?: Values }) {
   });
   return (
     <Card>
-      <AppText variant="title">Pair the pillbox</AppText>
-      <AppText>Type the pillbox code. The demo pillbox uses “pillbox”.</AppText>
+      <AppText variant="title">Pair VOICE</AppText>
+      <AppText>Type the VOICE code. The demo VOICE uses “pillbox”.</AppText>
       {formError ? <Banner tone="error" message={formError} /> : null}
-      <FormTextField control={control} name="deviceId" label="Pillbox code" autoCapitalize="none" autoCorrect={false} />
+      <FormTextField control={control} name="deviceId" label="VOICE code" autoCapitalize="none" autoCorrect={false} />
       <FormTextField
         control={control}
         name="cameraId"
         label="Camera code (optional)"
-        helper="Leave empty to use the pillbox code + “-cam”."
+        helper="Leave empty to use the VOICE code + “-cam”."
         autoCapitalize="none"
         autoCorrect={false}
       />
-      <Button title="Pair pillbox" icon="link" onPress={() => onSubmit()} loading={pair.isPending} />
+      <Button title="Pair VOICE" icon="link" onPress={() => onSubmit()} loading={pair.isPending} />
     </Card>
   );
 }
@@ -69,14 +69,14 @@ export default function DeviceScreen() {
   const notPaired = q.isError && q.error instanceof ApiError && q.error.code === 'no_device';
 
   const confirmUnpair = () =>
-    Alert.alert('Unpair this pillbox?', 'It will stop getting the schedule until it is paired again.', [
+    Alert.alert('Unpair this VOICE?', 'It will stop getting the schedule until it is paired again.', [
       { text: 'Keep it', style: 'cancel' },
       { text: 'Unpair', style: 'destructive', onPress: () => unpair.mutate() },
     ]);
 
   return (
     <Screen refreshing={q.isRefetching} onRefresh={q.refetch}>
-      <Stack.Screen options={{ title: 'Pillbox' }} />
+      <Stack.Screen options={{ title: 'VOICE' }} />
       {q.isPending ? (
         <CardSkeleton lines={5} />
       ) : notPaired ? (
@@ -95,7 +95,7 @@ export default function DeviceScreen() {
             <AppText>Last checked in: {ago(q.data.lastSeen)}</AppText>
             <AppText muted>Camera ({q.data.cameraId}): last used {ago(q.data.cameraLastSeen)}</AppText>
             {q.data.status === 'offline' ? (
-              <Banner tone="warning" message="Check that the pillbox is plugged in and the WiFi is working." />
+              <Banner tone="warning" message="Check that VOICE is plugged in and the WiFi is working." />
             ) : null}
           </Card>
           <AppText variant="title">Slots</AppText>
@@ -115,9 +115,9 @@ export default function DeviceScreen() {
           {changing ? (
             <PairForm pid={pid} initial={{ deviceId: q.data.deviceId, cameraId: q.data.cameraId }} />
           ) : (
-            <Button title="Change pillbox code" variant="secondary" onPress={() => setChanging(true)} />
+            <Button title="Change VOICE code" variant="secondary" onPress={() => setChanging(true)} />
           )}
-          <Button title="Unpair pillbox" variant="danger" onPress={confirmUnpair} loading={unpair.isPending} />
+          <Button title="Unpair VOICE" variant="danger" onPress={confirmUnpair} loading={unpair.isPending} />
         </>
       )}
     </Screen>

@@ -16,7 +16,7 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, st
   const { colors } = useTheme();
   const palette = {
     primary: { bg: colors.primary, fg: colors.onPrimary, border: colors.primary },
-    secondary: { bg: colors.surface, fg: colors.primary, border: colors.primary },
+    secondary: { bg: colors.primarySoft, fg: colors.primary, border: colors.primarySoft },
     danger: { bg: colors.danger, fg: colors.onDanger, border: colors.danger },
     ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
   }[variant];
@@ -50,10 +50,10 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, st
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: minTouch + 4,
-    borderRadius: radius.md,
+    minHeight: minTouch + 8,
+    borderRadius: radius.pill,
     borderWidth: 2,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
     justifyContent: 'center',
   },

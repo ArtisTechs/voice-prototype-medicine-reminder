@@ -35,7 +35,7 @@ export default function JoinPatient() {
   });
   return (
     <Screen>
-      <AppText muted>Ask the family member who set up the pillbox to open “Share” and give you the code.</AppText>
+      <AppText muted>Ask the family member who set up VOICE to open “Family” and give you the code.</AppText>
       {formError ? <Banner tone="error" message={formError} /> : null}
       <FormTextField
         control={control}

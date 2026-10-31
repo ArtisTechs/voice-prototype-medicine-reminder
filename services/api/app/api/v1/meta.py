@@ -10,7 +10,7 @@ router = APIRouter(tags=["meta"])
 async def meta() -> dict:
     """Public, no personal data. The app's first screen calls this to show the server is reachable."""
     return {
-        "name": "Medicine Reminder API",
+        "name": "VOICE API",
         "version": "1.0.0",
         "deviceTz": get_settings().device_tz,
         "serverTime": device_now().isoformat(timespec="seconds"),

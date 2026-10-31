@@ -23,6 +23,10 @@ describe.each(['light', 'dark'] as const)('%s theme meets WCAG AA', (scheme) => 
     ['button label on primary', c.onPrimary, c.primary],
     ['button label on danger', c.onDanger, c.danger],
     ['danger text on surface', c.danger, c.surface],
+    ['primary on primarySoft', c.primary, c.primarySoft],
+    ['text on primarySoft', c.text, c.primarySoft],
+    ['accent on accentSoft', c.accent, c.accentSoft],
+    ['accent on surface', c.accent, c.surface],
   ])('%s >= 4.5', (_name, fg, bg) => {
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });

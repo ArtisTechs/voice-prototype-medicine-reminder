@@ -211,8 +211,8 @@ async def offline(db: AsyncSession, patient: Patient, device_id: str, last_seen_
         patient,
         "offline",
         f"offline:{device_id}:{last_seen_epoch}",
-        "Pillbox is offline",
-        f"{patient.display_name}'s pillbox has not checked in since {since}. Check its power and WiFi.",
+        "VOICE is offline",
+        f"{patient.display_name}'s VOICE has not checked in since {since}. Check its power and WiFi.",
         {"deviceId": device_id},
     )
 
@@ -224,7 +224,7 @@ async def scan_unknown(db: AsyncSession, patient: Patient, scan_id: int) -> Crea
         "scan_unknown",
         f"scan:{scan_id}",
         "Unknown medicine scanned",
-        f"The pillbox camera could not recognise a package for {patient.display_name}. Tap to review.",
+        f"The VOICE camera could not recognise a package for {patient.display_name}. Tap to review.",
         {"scanId": scan_id, "url": f"/patients/{patient.id}/scans"},
     )
 

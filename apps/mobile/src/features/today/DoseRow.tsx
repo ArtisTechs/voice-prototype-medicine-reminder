@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { TodayDose } from '../../api/types';
 import { AppText } from '../../components/AppText';
+import { IconCircle } from '../../components/Decor';
 import { StatusBadge } from '../../components/StatusBadge';
 import { fmtClock, fmtTimeOfDate } from '../../lib/format';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -24,29 +25,43 @@ export function statusLabel(d: TodayDose, timeZone?: string): string {
   }
 }
 
-/** One dose on the timeline: time rail, medicine, status (icon + word). */
-export function DoseRow({ dose, timeZone, last }: { dose: TodayDose; timeZone?: string; last?: boolean }) {
-  const { colors, status } = useTheme();
-  const tone = status[dose.status];
+export function partOfDay(hhmm: string): 'Morning' | 'Afternoon' | 'Evening' {
+  const h = Number(hhmm.slice(0, 2));
+  return h < 12 ? 'Morning' : h < 18 ? 'Afternoon' : 'Evening';
+}
+
+const ICON = { upcoming: 'medical', due: 'alarm', taken: 'checkmark', late: 'time', missed: 'close', expired: 'warning' } as const;
+const TONE = { upcoming: 'neutral', due: 'due', taken: 'taken', late: 'taken', missed: 'missed', expired: 'expired' } as const;
+
+/** One dose on the timeline: time, medicine, status (icon + word). Urgent states get a coloured edge. */
+export function DoseRow({ dose, timeZone }: { dose: TodayDose; timeZone?: string; last?: boolean }) {
+  const { colors, status, scheme } = useTheme();
+  const urgent = dose.status === 'due' || dose.status === 'missed';
   const label = statusLabel(dose, timeZone);
   return (
     <View
       accessible
       accessibilityLabel={`${fmtClock(dose.time)}. ${dose.medicineName}, ${dose.dose}${dose.slot ? `, slot ${dose.slot}` : ''}. ${label}.`}
-      style={styles.row}
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: urgent ? status[dose.status].fg : scheme === 'dark' ? colors.border : 'transparent',
+          borderWidth: urgent ? 2 : 1,
+        },
+      ]}
     >
-      <View style={styles.rail}>
-        <AppText variant="bodyStrong">{fmtClock(dose.time)}</AppText>
-        <View style={[styles.dot, { backgroundColor: tone.fg }]} />
-        {!last ? <View style={[styles.line, { backgroundColor: colors.border }]} /> : null}
-      </View>
-      <View style={[styles.card, { borderColor: dose.status === 'due' || dose.status === 'missed' ? tone.fg : colors.border, backgroundColor: colors.surface }]}>
+      <IconCircle icon={ICON[dose.status]} tone={TONE[dose.status]} size={48} />
+      <View style={styles.body}>
+        <AppText variant="bodyStrong" muted>
+          {fmtClock(dose.time)}
+        </AppText>
         <AppText variant="title">{dose.medicineName}</AppText>
         <AppText muted>
           {dose.dose}
           {dose.slot ? ` · Slot ${dose.slot}` : ''}
+          {dose.instructions ? ` · ${dose.instructions}` : ''}
         </AppText>
-        {dose.instructions ? <AppText>{dose.instructions}</AppText> : null}
         <StatusBadge status={dose.status} label={label} />
       </View>
     </View>
@@ -54,9 +69,6 @@ export function DoseRow({ dose, timeZone, last }: { dose: TodayDose; timeZone?: 
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: spacing.md },
-  rail: { width: 84, alignItems: 'center', gap: spacing.xs },
-  dot: { width: 14, height: 14, borderRadius: 7 },
-  line: { width: 2, flex: 1, minHeight: 24 },
-  card: { flex: 1, borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs, marginBottom: spacing.md },
+  card: { flexDirection: 'row', gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, alignItems: 'flex-start' },
+  body: { flex: 1, gap: 4 },
 });

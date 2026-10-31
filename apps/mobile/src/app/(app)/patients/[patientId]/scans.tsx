@@ -84,13 +84,13 @@ export default function Scans() {
   return (
     <Screen refreshing={scans.isRefetching} onRefresh={scans.refetch}>
       <Stack.Screen options={{ title: 'Camera scans' }} />
-      <AppText muted>Photos from the pillbox camera button. They are deleted after 30 days.</AppText>
+      <AppText muted>Photos from the VOICE camera button. They are deleted after 30 days.</AppText>
       {scans.isPending || meds.isPending ? (
         <CardSkeleton lines={4} />
       ) : scans.isError ? (
         <ErrorState error={scans.error} onRetry={scans.refetch} />
       ) : scans.data.items.length === 0 ? (
-        <EmptyState icon="camera-outline" title="No scans yet" message="When someone presses the CAMERA button on the pillbox, the photo shows here." />
+        <EmptyState icon="camera-outline" title="No scans yet" message="When someone presses the CAMERA button on VOICE, the photo shows here." />
       ) : (
         scans.data.items.map((s) => <ScanCard key={s.id} pid={pid} scan={s} medicines={meds.data ?? []} />)
       )}

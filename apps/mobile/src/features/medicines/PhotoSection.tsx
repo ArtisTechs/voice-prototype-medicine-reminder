@@ -38,7 +38,7 @@ export function PhotoSection({ pid, mid }: { pid: number; mid: number }) {
   return (
     <View style={styles.wrap}>
       <AppText variant="title">Package photos</AppText>
-      <AppText muted>Take the front, back and side of the box. This helps the pillbox camera recognise it.</AppText>
+      <AppText muted>Take the front, back and side of the box. This helps the VOICE camera recognise it.</AppText>
       {error ? <Banner tone="error" message={error} /> : null}
       {photos.isPending ? (
         <Skeleton height={120} />

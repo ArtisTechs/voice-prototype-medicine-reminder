@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# Medicine reminder API + worker. Stages: base -> deps -> models -> runtime (prod) / dev (tests, reload).
+# VOICE API + worker. Stages: base -> deps -> models -> runtime (prod) / dev (tests, reload).
 
 FROM ghcr.io/astral-sh/uv:0.8 AS uv
 

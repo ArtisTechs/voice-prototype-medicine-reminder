@@ -20,7 +20,9 @@ export function EmptyState({ icon = 'leaf-outline', title, message, actionLabel,
   const { colors } = useTheme();
   return (
     <View style={styles.center} accessibilityRole="summary">
-      <Ionicons name={icon} size={48} color={colors.textMuted} />
+      <View style={[styles.emptyIcon, { backgroundColor: colors.primarySoft }]}>
+        <Ionicons name={icon} size={40} color={colors.primary} />
+      </View>
       <AppText variant="title" style={styles.text}>
         {title}
       </AppText>
@@ -36,7 +38,7 @@ export function EmptyState({ icon = 'leaf-outline', title, message, actionLabel,
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.code === 'network') return "We couldn't reach the pillbox server. Check that your phone is on the same WiFi.";
+    if (error.code === 'network') return "We couldn't reach the VOICE server. Check that your phone is on the same WiFi.";
     return error.message;
   }
   return 'Something went wrong.';
@@ -112,6 +114,7 @@ export function Banner({ tone = 'warning', message }: { tone?: 'warning' | 'erro
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.xxl },
+  emptyIcon: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center' },
   text: { textAlign: 'center' },
   skeletonCard: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
   banner: {

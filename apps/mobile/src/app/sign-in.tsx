@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 
 import { useAuth } from '../auth/AuthProvider';
 import { AppText } from '../components/AppText';
+import { Brand } from '../components/Brand';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { Banner } from '../components/States';
@@ -30,7 +31,8 @@ export default function SignIn() {
   });
 
   return (
-    <Screen>
+    <Screen edges={['top', 'left', 'right']}>
+      <Brand tagline="Medicine reminders your family can see." />
       <AppText variant="headline">Welcome back</AppText>
       <AppText muted>Sign in to see how your family member is doing with their medicines.</AppText>
       {formError ? <Banner tone="error" message={formError} /> : null}

@@ -12,7 +12,8 @@ export default function AppLayout() {
     <RealtimeProvider>
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
+          headerStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
           headerTintColor: colors.text,
           headerTitleStyle: { fontSize: 20, fontWeight: '600' },
           headerBackButtonDisplayMode: 'minimal',

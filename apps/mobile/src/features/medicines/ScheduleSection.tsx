@@ -48,7 +48,7 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
   };
 
   const remove = (s: Schedule) =>
-    Alert.alert(`Remove the ${fmtClock(s.time)} dose?`, 'The pillbox will stop reminding at this time.', [
+    Alert.alert(`Remove the ${fmtClock(s.time)} dose?`, 'VOICE will stop reminding at this time.', [
       { text: 'Keep it', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => m.remove.mutate(s.id) },
     ]);
@@ -57,7 +57,7 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
     <View style={styles.wrap}>
       <AppText variant="title">Dose times</AppText>
       {!medicine.slot ? (
-        <Banner tone="warning" message="This medicine has no pillbox slot, so the pillbox will not remind at these times." />
+        <Banner tone="warning" message="This medicine has no VOICE slot, so VOICE will not remind at these times." />
       ) : null}
       {medicine.schedules.length === 0 && editing === null ? <AppText muted>No dose times yet.</AppText> : null}
       {medicine.schedules.map((s) => (
@@ -76,7 +76,7 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
           <TimeField label="Time" value={time} onChange={setTime} />
           <ChoiceGroup<number>
             label="Days"
-            helper="The pillbox currently reminds every day; other days are saved for later."
+            helper="VOICE currently reminds every day; other days are saved for later."
             multiple
             values={days}
             onToggle={(d) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort()))}

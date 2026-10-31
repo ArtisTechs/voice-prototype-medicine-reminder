@@ -64,15 +64,15 @@ export function MedicineForm({ medicine, others, submitLabel, onSubmit }: Props)
         )}
       />
       <FormNumberField control={control} name="doseAmount" label="How much per dose" unit={`${unit}(s)`} />
-      <FormTextField control={control} name="instructions" label="Instructions (optional)" helper='Short, e.g. "After breakfast". The pillbox shows the first 39 letters.' multiline />
+      <FormTextField control={control} name="instructions" label="Instructions (optional)" helper='Short, e.g. "After breakfast". VOICE shows the first 39 letters.' multiline />
 
       <Controller
         control={control}
         name="slot"
         render={({ field, fieldState }) => (
           <ChoiceGroup<number | null>
-            label="Pillbox slot"
-            helper="The compartment this medicine goes in. Without a slot the pillbox will not remind."
+            label="VOICE slot"
+            helper="The compartment this medicine goes in. Without a slot VOICE will not remind."
             error={fieldState.error?.message}
             value={field.value}
             onChange={field.onChange}

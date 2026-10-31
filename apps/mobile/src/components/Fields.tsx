@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   field: { gap: spacing.xs },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   inputBox: {
-    minHeight: minTouch + 4,
+    minHeight: minTouch + 8,
     borderWidth: 2,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     minWidth: minTouch,
     paddingHorizontal: spacing.md,
     borderWidth: 2,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

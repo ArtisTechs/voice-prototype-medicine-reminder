@@ -120,11 +120,11 @@ async def accept_invite(db: AsyncSession, user: User, code: str) -> Patient:
 async def pair_device(db: AsyncSession, patient_id: int, data: DevicePair) -> Device:
     camera_id = data.camera_id or f"{data.device_id}-cam"
     if data.device_id == camera_id:
-        raise BadRequest("invalid_device", "The pillbox and camera codes must be different.")
+        raise BadRequest("invalid_device", "The VOICE and camera codes must be different.")
     existing = await device_repo.for_patient(db, patient_id)
     clash = await device_repo.by_any_id(db, data.device_id) or await device_repo.by_any_id(db, camera_id)
     if clash and clash.patient_id != patient_id:
-        raise Conflict("device_taken", "This pillbox is already paired with another person.")
+        raise Conflict("device_taken", "This VOICE is already paired with another person.")
     if existing:
         existing.device_id, existing.camera_id = data.device_id, camera_id
         device = existing
@@ -152,7 +152,7 @@ def is_online(device: Device) -> bool:
 async def device_status(db: AsyncSession, patient_id: int) -> DeviceOut:
     device = await device_repo.for_patient(db, patient_id)
     if device is None:
-        raise NotFound("no_device", "No pillbox is paired yet.")
+        raise NotFound("no_device", "No VOICE is paired yet.")
     meds = {m.slot: m for m in await med_repo.list_for_patient(db, patient_id) if m.slot}
     state = device.slot_state or {}
     slots = []

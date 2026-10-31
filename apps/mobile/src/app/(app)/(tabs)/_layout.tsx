@@ -10,10 +10,13 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
+        headerStyle: { backgroundColor: colors.bg },
+        headerShadowVisible: false,
         headerTintColor: colors.text,
-        headerTitleStyle: { fontSize: 20, fontWeight: '600' },
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, minHeight: 68 },
+        headerTitleStyle: { fontSize: 24, fontWeight: '700' },
+        headerTitleAlign: 'left',
+        sceneStyle: { backgroundColor: colors.bg },
+        tabBarStyle: { backgroundColor: colors.surface, borderTopWidth: 0, minHeight: 72, elevation: 12, shadowOpacity: 0.08, shadowRadius: 12 },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: 16, fontWeight: '600' },
@@ -24,6 +27,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color as string} />,
         }}
       />

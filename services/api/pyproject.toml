@@ -1,7 +1,7 @@
 [project]
 name = "medrem-api"
 version = "0.1.0"
-description = "Medicine reminder backend: caregiver API, ESP32 device API, worker"
+description = "VOICE backend: caregiver API, ESP32 device API, worker"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.162,<0.163",

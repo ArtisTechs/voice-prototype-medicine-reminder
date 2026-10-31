@@ -3,7 +3,7 @@ name: architecture
 description: Use when deciding where new code or files go in this monorepo, what may import what, how things are named, or when recording a design decision in docs/decisions.md. Load before creating any new module, folder, service, or endpoint.
 ---
 
-# Architecture: medicine reminder monorepo
+# Architecture: VOICE monorepo
 
 ## Repo layout
 ```

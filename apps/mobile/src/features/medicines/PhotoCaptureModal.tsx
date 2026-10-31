@@ -40,7 +40,7 @@ export function PhotoCaptureModal({ visible, angle, onClose, onCaptured }: Props
       <SafeAreaView style={[styles.flex, { backgroundColor: colors.bg }]}>
         <View style={styles.header}>
           <AppText variant="title">Photo of the {ANGLE_WORDS[angle] ?? 'box'}</AppText>
-          <AppText muted>Good light, box fills the frame, name easy to read. The pillbox camera uses these to recognise the box.</AppText>
+          <AppText muted>Good light, box fills the frame, name easy to read. The VOICE camera uses these to recognise the box.</AppText>
         </View>
         {!permission ? null : !permission.granted ? (
           <View style={styles.center}>

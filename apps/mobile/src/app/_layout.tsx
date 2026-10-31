@@ -25,7 +25,8 @@ function RootNavigator() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
+          headerStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
           headerTintColor: colors.text,
           headerTitleStyle: { fontSize: 20, fontWeight: '600' },
           contentStyle: { backgroundColor: colors.bg },
@@ -35,8 +36,8 @@ function RootNavigator() {
           <Stack.Screen name="(app)" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
-          <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
-          <Stack.Screen name="sign-up" options={{ title: 'Create an account' }} />
+          <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+          <Stack.Screen name="sign-up" options={{ title: '' }} />
         </Stack.Protected>
       </Stack>
     </>

@@ -1,7 +1,7 @@
 // Design tokens (see .claude/skills/ui-ux). Every color pair is WCAG AA checked; do not invent colors.
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
-export const radius = { sm: 8, md: 12, lg: 16 } as const;
+export const radius = { sm: 10, md: 14, lg: 20, xl: 28, pill: 999 } as const;
 export const minTouch = 48;
 
 export const type = {
@@ -15,33 +15,41 @@ export const type = {
 export type TypeVariant = keyof typeof type;
 
 const light = {
-  bg: '#F6F7F9',
+  bg: '#F3F5F9',
   surface: '#FFFFFF',
-  surfaceAlt: '#EEF0F3',
-  border: '#C9CED6',
-  text: '#16191D',
-  textMuted: '#4A515C',
-  primary: '#0B5FA5',
+  surfaceAlt: '#EBEFF5',
+  border: '#C4CBD6',
+  text: '#121826',
+  textMuted: '#4A5466',
+  primary: '#2E4FD8',
+  primarySoft: '#E7ECFD',
   onPrimary: '#FFFFFF',
+  accent: '#0A6B5C',
+  accentSoft: '#DDF3EE',
   danger: '#B3261E',
   onDanger: '#FFFFFF',
-  focus: '#0B5FA5',
-  skeleton: '#E1E4E9',
+  focus: '#2E4FD8',
+  skeleton: '#E1E6EE',
+  shadow: '#1B2A4A',
 };
 
 const dark: typeof light = {
-  bg: '#101317',
-  surface: '#181C21',
-  surfaceAlt: '#232830',
-  border: '#3A414B',
-  text: '#F1F3F5',
-  textMuted: '#B4BBC5',
-  primary: '#7DB8F2',
-  onPrimary: '#0A1F33',
+  bg: '#0E1117',
+  surface: '#171B24',
+  surfaceAlt: '#212734',
+  border: '#394152',
+  text: '#F1F3F7',
+  textMuted: '#B3BBCA',
+  primary: '#9FB2FF',
+  primarySoft: '#1F2A4D',
+  onPrimary: '#0E1A44',
+  accent: '#6ED9C4',
+  accentSoft: '#12302B',
   danger: '#FF8A80',
   onDanger: '#3B1412',
-  focus: '#7DB8F2',
-  skeleton: '#2A3038',
+  focus: '#9FB2FF',
+  skeleton: '#262C38',
+  shadow: '#000000',
 };
 
 export const palettes = { light, dark };

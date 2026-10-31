@@ -37,7 +37,7 @@ def create_app() -> FastAPI:
     s = get_settings()
     setup_logging(s.log_level)
     app = FastAPI(
-        title="Medicine Reminder API",
+        title="VOICE API",
         version="1.0.0",
         lifespan=lifespan,
         docs_url="/docs" if s.enable_docs else None,

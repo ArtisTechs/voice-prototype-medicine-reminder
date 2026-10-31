@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { useAuth } from '../auth/AuthProvider';
 import { AppText } from '../components/AppText';
+import { Brand } from '../components/Brand';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { Banner } from '../components/States';
@@ -32,6 +33,7 @@ export default function SignUp() {
 
   return (
     <Screen>
+      <Brand tagline="Set up once. Know every dose was taken." />
       <AppText variant="headline">Create your account</AppText>
       <AppText muted>You can look after one or more people, and share them with other family members.</AppText>
       {formError ? <Banner tone="error" message={formError} /> : null}

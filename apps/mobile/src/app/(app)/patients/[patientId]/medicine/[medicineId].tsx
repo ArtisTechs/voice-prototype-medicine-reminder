@@ -23,7 +23,7 @@ export default function EditMedicine() {
   const [saved, setSaved] = useState(false);
 
   const confirmDelete = () =>
-    Alert.alert(`Delete ${med.data?.label}?`, 'It leaves the pillbox schedule. Past history is kept.', [
+    Alert.alert(`Delete ${med.data?.label}?`, 'It leaves the VOICE schedule. Past history is kept.', [
       { text: 'Keep it', style: 'cancel' },
       {
         text: 'Delete',

@@ -4,7 +4,7 @@ import type { ExpoConfig } from 'expo/config';
 const projectId = process.env.EXPO_PUBLIC_EXPO_PROJECT_ID || undefined;
 
 const config: ExpoConfig = {
-  name: 'Pillbox Care',
+  name: 'VOICE',
   slug: 'medrem-caregiver',
   scheme: 'medrem',
   version: '1.0.0',
@@ -18,7 +18,7 @@ const config: ExpoConfig = {
   android: {
     package: 'com.example.medrem',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#2E4FD8',
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',
       monochromeImage: './assets/android-icon-monochrome.png',
@@ -32,12 +32,12 @@ const config: ExpoConfig = {
     [
       'expo-camera',
       {
-        cameraPermission: 'Allow Pillbox Care to use the camera to scan medicine barcodes and take package photos.',
+        cameraPermission: 'Allow VOICE to use the camera to scan medicine barcodes and take package photos.',
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,
       },
     ],
-    ['expo-notifications', { color: '#0B5FA5', defaultChannel: 'alerts' }],
+    ['expo-notifications', { color: '#2E4FD8', defaultChannel: 'alerts' }],
     '@react-native-community/datetimepicker',
   ],
   experiments: { typedRoutes: false },
