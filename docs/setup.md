@@ -7,7 +7,9 @@
 - On the phone: **Expo Go** from the Play Store or App Store (it must support Expo SDK 58).
 
 ## 2. Find this PC's LAN IP
-`ipconfig` → section **Wireless LAN adapter Wi-Fi** → **IPv4 Address**, e.g. `192.168.0.215`. Do not use the `vEthernet (WSL)` address. Ask the router for a DHCP reservation so the IP does not change; the pillbox firmware has it hard-coded.
+**Easiest: run `start-voice.cmd`.** It detects the IP, writes `LAN_IP` into `.env` (creating `.env` with random secrets on the first run) and starts the stack. `setup-voice.cmd` opens the firewall once. For the VOICE device, use the Windows Mobile hotspot: its address is always `192.168.137.1`, so the firmware never needs a laptop-specific IP (see the README, D-entry "Fixed device address").
+
+Manual way: `ipconfig` → section **Wireless LAN adapter Wi-Fi** → **IPv4 Address**, e.g. `192.168.0.215`. Do not use the `vEthernet (WSL)` address.
 
 ## 3. Configure
 ```bash
@@ -54,7 +56,7 @@ Expo Go on Android cannot receive remote push (SDK 53+). In-app alerts still arr
 ## 8. Connect the real pillbox
 In the **main ESP32 sketch**, change only:
 ```cpp
-#define BACKEND_URL "http://192.168.0.215:5000"   // your LAN_IP, port 5000, plain HTTP
+#define BACKEND_URL "http://192.168.137.1:5000"   // Windows Mobile hotspot address (same on every laptop), port 5000, plain HTTP
 ```
 The ESP32-CAM sketch uses the same base URL. Flash both boards. In the app: person → **Pillbox** → pair `pillbox` (the demo seed already pairs it). Within 60 s the pillbox status turns **Online**.
 

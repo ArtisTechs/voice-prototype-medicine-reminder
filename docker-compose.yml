@@ -2,7 +2,8 @@
 name: medrem
 
 x-api-env: &api-env
-  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medrem}:${POSTGRES_PASSWORD:-medrem}@db:5432/${POSTGRES_DB:-medrem}
+  # Unset = the local db container. Set DATABASE_URL in .env to use a hosted Postgres (docs/supabase.md).
+  DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-medrem}:${POSTGRES_PASSWORD:-medrem}@db:5432/${POSTGRES_DB:-medrem}}
   REDIS_URL: redis://redis:6379/0
   SCAN_DIR: /data/scans
 

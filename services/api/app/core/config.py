@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     enable_docs: bool = False
 
     database_url: str = "postgresql+asyncpg://medrem:medrem@db:5432/medrem"
+    # Hosted Postgres (Supabase free) allows few connections; api + worker each open up to size + overflow.
+    db_pool_size: int = 10
+    db_max_overflow: int = 10
     redis_url: str = "redis://redis:6379/0"
 
     jwt_secret: str = EXAMPLE_SECRET

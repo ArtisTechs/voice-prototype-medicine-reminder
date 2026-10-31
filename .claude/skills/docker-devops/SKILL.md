@@ -34,7 +34,7 @@ description: Use when changing Docker Compose services, Dockerfiles, dev vs prod
 ## .env
 - `.env.example` is committed and complete, with a comment for each variable. `.env` is git-ignored.
 - **Required to edit:** `LAN_IP` (the PC's WiFi IPv4), `JWT_SECRET` (`make secret` prints one), `POSTGRES_PASSWORD`.
-- `EXPO_PUBLIC_API_URL` defaults to `http://${LAN_IP}:5000`.
+- `EXPO_PUBLIC_API_URL` defaults to `http://${LAN_IP}:${API_PORT:-5000}`. `start-voice.cmd` (scripts/start.ps1) detects `LAN_IP` on every start; the device always uses the Windows Mobile hotspot address `192.168.137.1:5000`. `setup-voice.cmd` opens 5000/8081 on all firewall profiles.
 - Compose reads `.env` automatically. Services get `env_file: .env`.
 
 ## Makefile targets

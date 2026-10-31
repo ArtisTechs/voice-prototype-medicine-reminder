@@ -62,7 +62,7 @@ services:
     env_file: .env
     environment:
       REACT_NATIVE_PACKAGER_HOSTNAME: ${LAN_IP:?Set LAN_IP in .env to this PC's WiFi IPv4}
-      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://${LAN_IP}:5000}
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://${LAN_IP}:${API_PORT:-5000}}
       EXPO_TUNNEL: ${EXPO_TUNNEL:-false}
       EXPO_CLIENT: ${EXPO_CLIENT:-go}
       CI: "false"
