@@ -9,6 +9,7 @@ from app.api.device.routes import router as device_router
 from app.api.v1 import router as v1_router
 from app.core.config import get_settings
 from app.core.db import dispose_engine, session_scope
+from app.core.device_secret import DeviceSecretMiddleware
 from app.core.errors import install_error_handlers
 from app.core.logging import get_logger, setup_logging
 from app.core.redis import close_redis, get_redis
@@ -51,6 +52,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(DeviceSecretMiddleware)  # added last = outermost, so paths are rewritten first
     install_error_handlers(app)
     app.include_router(device_router)
     app.include_router(v1_router)

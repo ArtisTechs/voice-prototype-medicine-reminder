@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     missed_fallback_minutes: int = 35
 
     rate_limit_enabled: bool = True
+    # Internet-facing server: the device calls /d/<secret>/api/... and the bare device paths 404.
+    device_path_secret: str = ""
 
     scan_dir: str = "/data/scans"
     scan_retention_days: int = 30

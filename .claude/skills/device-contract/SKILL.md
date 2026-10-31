@@ -11,6 +11,7 @@ description: Use whenever touching the ESP32-facing endpoints (GET /api/schedule
 - Plain HTTP on **host port 5000**, paths exactly `/api/schedule`, `/api/scan`, `/api/events` (no `/v1`, no trailing slash).
 - No auth headers. Identity = `?device=` / JSON `device` / `X-Device` header.
 - The firmware's `BACKEND_URL` is `http://<PC LAN IP>:5000`. Changing only that value must be enough.
+- On an internet-facing server, `DEVICE_PATH_SECRET` is set and `BACKEND_URL` becomes `http://<host>:5000/d/<secret>`. `app/core/device_secret.py` strips the prefix before routing (and before logging) and 404s the bare device paths. The contract itself (paths after the prefix, bodies, responses) is unchanged.
 
 ## Endpoints at a glance
 | Endpoint | Identity | Success | Limits |

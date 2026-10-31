@@ -99,6 +99,8 @@ More detail, including real push notifications and production: **[docs/setup.md]
 
 To keep the data in the cloud (shared by every laptop), use Supabase as the database: **[docs/supabase.md](docs/supabase.md)**.
 
+To put the whole system on the internet (one server, no laptop needed), see **[docs/deploy-gcp.md](docs/deploy-gcp.md)**.
+
 The seed creates caregiver `demo@example.com`, patient **Lola Rosa**, and pillbox `pillbox`/`pillbox-cam` with three medicines:
 - Losartan 50mg (slot 1, 08:00)
 - Metformin 500mg (slot 2, 08:00 + 20:00, **low stock**)
