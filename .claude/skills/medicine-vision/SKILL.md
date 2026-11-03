@@ -1,42 +1,33 @@
 ---
 name: medicine-vision
-description: Use when working on the package scan pipeline in services/api/app/vision (barcode, OCR, CLIP embeddings in pgvector, optional Claude fallback), its 10-second time budget, thresholds, adding reference images, or evaluating accuracy with make eval-vision.
+description: Use when working on the package scan pipeline in services/api/src/vision (the Gemini call, the checks in code, fuzzy name matching), its 10-second time budget, thresholds, reference photos, or evaluating accuracy with make eval-vision.
 ---
 
-# Medicine vision pipeline
+# Medicine vision pipeline (Gemini free tier)
 
 ## Goal
-Identify which of **this patient's registered medicines** is in a 1024x768 JPEG of the package, and answer `POST /api/scan` in **under 10 s** (the camera gives up at 15 s). If unsure, answer `found:false`, because a wrong "identified" is worse than "not found".
+Identify which of **this box's registered medicines** is in a 1024x768 JPEG of the package, and answer `POST /api/scan` in **under 10 s** (the camera gives up at 15 s). If unsure, answer `{"found":false}`: a wrong "identified" is worse than "not found". Never a 5xx to the camera.
 
-## Stages (in order, stop at the first confident match)
-| # | Stage | Lib | Match rule | Typical time (CPU) |
-|---|---|---|---|---|
-| 1 | Barcode | `zxing-cpp` | decoded text equals `medicines.barcode` (digits normalized, leading zeros) | 20–300 ms |
-| 2 | OCR | `rapidocr-onnxruntime` | `rapidfuzz.fuzz.token_set_ratio(text, "name strength") ≥ VISION_OCR_THRESHOLD` (default 80) and ≥ the runner-up + 8 | 0.8–3 s |
-| 3 | Look | `open_clip` ViT-B-32 (`laion2b_s34b_b79k`) → 512-d, pgvector cosine | best similarity ≥ `VISION_EMBED_THRESHOLD` (0.85) and margin ≥ `VISION_EMBED_MARGIN` (0.03) over the next medicine | 0.3–1 s |
-| 4 | Claude (optional) | `anthropic`, model `claude-sonnet-5-5` | the model picks one id from the list or `none` | 2–6 s |
+## Flow (`src/vision/pipeline.ts`, called by `scanService.scan`)
+1. **Gemini call** (`gemini.ts`, `@google/genai`, model `GEMINI_MODEL`, key `GEMINI_API_KEY`): send the JPEG inline (base64) plus the box's medicines as JSON (`id, name, strength, barcode`, nothing about the patient). `responseMimeType: "application/json"` with a response schema: `{ medicineId | null, readName, readStrength, readExpiry | null, confidence 0-1 }`. The system prompt says: answer `null` when unsure, never guess.
+2. **Decide in code, not in the model:**
+   - `medicineId` must be one of this box's medicines **and** `confidence >= SCAN_MIN_CONFIDENCE` (0.7) → match, `method="llm"`, `score=confidence`.
+   - `medicineId` is `null` → fuzzy match `readName` + `readStrength` against the registered names (`match.ts`, `fastest-levenshtein`): name similarity >= `SCAN_FUZZY_THRESHOLD` (0.8), a different known strength rules a candidate out, and the winner must lead the runner-up by 0.1 → `method="ocr"`.
+   - Anything else (unknown id, low confidence) → not found.
+3. **The answer comes from MySQL** (`scanAnswer`): `name, dose, instructions, expiry, slot, qty, low, expired` are read from the matched medicine's row and cut to the camera limits (31 / 19 / 63). Nothing the model read is echoed. `readExpiry` is stored on the scan (`scans.read_expiry`, shown in the app as `ocrExpiry`) as information only.
+4. **Failures** (timeout, 429, missing key, bad reply, anything) → `{"found":false}` and a logged reason (`no_key | timeout | rate_limited | bad_response | error | busy | local_rate_limit | low_confidence | no_match`). The scan photo and result are still saved.
 
-- **Barcode** tries the full image, then 90/180/270 rotations, then center and half crops, then a 2x upscale of the center. Stop at the first decode.
-- **OCR** also parses `EXP`/`Exp. Date` + a date (`MM/YYYY`, `YYYY-MM`, `DD MMM YYYY`) into `ocr_expiry`. It is stored on the scan as **info only**; the inventory expiry stays the source of truth.
-- **Embedding** compares against the top 5 nearest reference images of the patient's medicines, takes the max per medicine, and applies the threshold and margin.
-- **Claude** runs only if `ANTHROPIC_API_KEY` is set **and** `VISION_LLM_FALLBACK=true` **and** at least 4 s of budget remain. It uses `timeout=remaining-0.5`. The prompt lists `id: name strength` only (no patient data). Any error is treated as `none`.
+## Budget and limits
+- `AbortController` aborts the Gemini call at `GEMINI_TIMEOUT_MS` (8000), never later than the budget; a backstop `Promise.race` against `SCAN_BUDGET_SECONDS` (9) covers a client that ignores the signal. The route's total stays under 10 s.
+- **One scan at a time per box:** a Redis lock `scan:<device pk>` (15 s TTL). A second press meanwhile is answered `found:false` without calling Gemini (`reason=busy`).
+- **Free-tier quota:** `GEMINI_MAX_PER_MINUTE` (10) counted in Redis; over it the scan answers `found:false` (`reason=local_rate_limit`) instead of collecting 429s. Real 429s are logged as `gemini_429`.
+- **Privacy:** Google may use free-tier inputs to improve its products. The notice is in the app's Settings screen and in `docs/setup.md`. The key lives only in `.env` (server). Never in the app, the firmware or git.
 
-## Budget
-- `SCAN_BUDGET_SECONDS=8.5` total for the pipeline. Each stage checks `deadline.remaining()` first and is skipped if it is below that stage's minimum (`barcode 0.2, ocr 1.5, embed 0.6, llm 4.0`).
-- CPU work runs in a dedicated `ThreadPoolExecutor(max_workers=2)`. An `asyncio.wait_for` wraps every stage.
-- Concurrency: a semaphore of 2 scans; the rest get `found:false` quickly if the wait exceeds 1 s.
-
-## Startup
-`app/vision/models.py::load_models()` runs in the API lifespan. It loads zxing (no model), RapidOCR, and the CLIP model + preprocess, then **warms up** each on a blank 1024x768 image and logs the load and warm-up ms. Set `VISION_ENABLED=false` to skip it (tests that do not need vision, and the worker). The model weights are baked into the image at `/opt/models` (`HF_HOME`, `OPENCLIP_CACHE`), so nothing is downloaded at runtime.
+## Reference photos
+Taken in the app (medicine → Photos) or created by correcting a scan; stored under `SCAN_DIR/refs/` and shown in the app. They are sent to Gemini (max one per medicine, max 4 medicines, 512 px) only when `SCAN_USE_REFERENCES=true`, because they add upload time. Corrections (`POST /patients/:id/scans/:scanId/correct`) copy the scan photo in as `angle=correction`.
 
 ## Logging
-One line per scan: `scan_done scan_id=.. method=barcode|ocr|embed|llm|none score=.. ms_total=.. ms_barcode=.. ms_ocr=.. ms_embed=.. ms_llm=..`. No image content and no medicine names in logs.
-
-## Adding reference images
-- **From the app:** medicine → Photos → front/back/side (`POST /api/v1/medicines/{id}/photos`). The service computes the embedding and stores the file under `SCAN_DIR/refs/`.
-- **From corrections:** `POST /api/v1/scans/{id}/correct` copies the scan image into refs with `angle=correction`.
-- **Bulk/dev:** `python -m scripts.add_refs <medicine_id> <folder>`.
-- Good references are well lit, fill the frame, and show the brand name. 3–6 per medicine is enough.
+One line per scan: `scan_done scanId method score reason ms_gemini ms_total`. No image content, no medicine names, no text the model read.
 
 ## Evaluating (`make eval-vision`)
 ```
@@ -44,11 +35,12 @@ services/api/tests/vision_samples/
   <medicine name exactly as seeded>/*.jpg   expected = that medicine
   none/*.jpg                                expected = not found
 ```
-`scripts/eval_vision.py` seeds a throwaway patient with the seed medicines + refs, runs the full pipeline on every sample, and prints a table: per-sample expected/got/method/ms, then **accuracy, false-positive rate (wrong medicine), p50/p95/max ms**. It exits non-zero if accuracy < 0.8, any false positive, or max ms > 8500. Samples are generated by `scripts/make_samples.py` (synthetic packages); add real photos from the camera to the same folders.
+`scripts/eval-vision.ts` registers the three demo medicines in memory, sends each sample to the **real** Gemini model (one at a time, `EVAL_PAUSE_MS` apart to respect the free tier) and prints per-sample expected / got / method / confidence / ms, then accuracy, wrong-medicine count and p50/p95/max ms. Exit code 1 if accuracy < 0.8, any wrong medicine, or max ms > budget. Add real photos from the camera to the same folders. Needs `GEMINI_API_KEY`.
 
-## Tuning thresholds
-Change them only with eval results in the commit message. Raising a threshold trades recall for fewer wrong matches. Wrong matches must stay at 0.
+## Tuning
+Change `SCAN_MIN_CONFIDENCE` / `SCAN_FUZZY_THRESHOLD` only with eval results in the commit message. Wrong matches must stay at 0.
 
-## Tests
-- `tests/vision/test_budget.py`: a full pipeline on a sample takes < 10 s (end-to-end through `/api/scan`) and a forced-slow stage still returns `found:false` in time.
-- `tests/vision/test_barcode.py`, `test_ocr_match.py` (fuzzy rules, EXP parsing), `test_text_limits` (contract).
+## Tests (Gemini is always faked: `tests/helpers.ts` `FakeVision`)
+- `tests/contract/scan.test.ts`: answer shape and values from the DB, flags, limits, 415/413/403, every failure mode → 200 `found:false`, a hanging client answered inside the budget, one-at-a-time, local quota, only this box's medicines sent.
+- `tests/vision/scans.test.ts`: confidence boundary, backstop, fuzzy path, reference photos, correction, privacy.
+- `tests/unit/vision.test.ts`: fuzzy rules and reply parsing.

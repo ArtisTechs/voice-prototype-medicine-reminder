@@ -1,32 +1,19 @@
 #!/bin/sh
-# API container start: wait for db -> migrate -> optional seed -> exec the given command.
+# API/worker container start: migrate (waits for the database) -> optional demo seed -> exec the command.
 set -e
 
-python - <<'EOF'
-import asyncio, sys, time
-import asyncpg
-from app.core.config import get_settings
-
-url = get_settings().database_url.replace("postgresql+asyncpg://", "postgresql://")
-
-async def wait():
-    for _ in range(60):
-        try:
-            conn = await asyncpg.connect(url)
-            await conn.close()
-            return
-        except Exception:
-            time.sleep(1)
-    sys.exit("database not reachable")
-
-asyncio.run(wait())
-EOF
-
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
-  alembic upgrade head
+  tries=0
+  until npx prisma migrate deploy; do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 30 ]; then echo "database not reachable or migration failed" >&2; exit 1; fi
+    echo "waiting for the database... ($tries)"
+    sleep 2
+  done
 fi
+
 if [ "${SEED_DEMO:-false}" = "true" ]; then
-  python -m app.seed
+  ${SEED_CMD}
 fi
 
 exec "$@"

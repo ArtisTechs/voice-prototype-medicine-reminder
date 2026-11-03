@@ -1,6 +1,6 @@
 # API reference
 
-The interactive OpenAPI docs are at `http://localhost:5000/docs` (dev only, `ENABLE_DOCS=true`).
+The interactive OpenAPI docs are at `http://localhost:5055/docs` (dev only, `ENABLE_DOCS=true`).
 
 - **Errors** always use one shape: `{"error": {"code": "snake_case", "message": "Human text.", "details": null | [...]}}`. Validation errors are `422 validation_error` with `details: [{field, message}]`.
 - **App JSON** is camelCase.
@@ -34,7 +34,8 @@ Errors: 403 `device_not_registered`, 413, 415, 422, 429 `rate_limited` (schedule
 | History | `GET /patients/{id}/history?from=YYYY-MM-DD&to=YYYY-MM-DD` (≤ 92 days) → overall, days, medicines, records |
 | Dashboard | `GET /dashboard` → `{patients:[card], unreadAlerts}` |
 | Alerts | `GET /alerts?limit&offset&unread&patientId` · `POST /alerts/{id}/read` · `POST /alerts/read-all` |
-| Scans | `GET /patients/{id}/scans` · `GET …/scans/{sid}/image` · `POST …/scans/{sid}/correct {medicineId|null}` |
+| Scans | `GET /patients/{id}/scans` · `GET …/scans/{sid}/image` · `POST …/scans/{sid}/correct {medicineId|null}`. `method` is `llm` (Gemini picked the medicine), `ocr` (matched on the name it read) or `none`; `score` is Gemini's confidence; `ocrExpiry` is the expiry date it read (information only). |
+| Pairing | `GET /devices/nearby` → unpaired boxes polling now, boxes checking in now, and boxes your people use |
 | Realtime | `WS /ws?token=<accessToken>` (bad token → close 4401). Messages: `{type, patientId?, data, ts}` with type in `intake.updated, device.updated, medicine.updated, patient.updated, alert.created, alert.read, scan.created, patients.changed, ping` |
 
 Dose status values: `upcoming, due, taken, late (> 15 min), missed, expired`. Alert types: `missed, taken, low_stock, expiry, expired_dose, offline, scan_unknown`.

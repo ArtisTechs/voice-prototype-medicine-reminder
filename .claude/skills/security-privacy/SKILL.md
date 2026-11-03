@@ -21,18 +21,18 @@ description: Use when touching authentication (JWT access/refresh, argon2), devi
 ## Devices (no auth in firmware)
 - The device endpoints are unauthenticated by necessity. Their mitigations:
   - Accept only `device_id`/`camera_id` values a caregiver has paired. Others → 403 (D6).
-  - Rate limits per device id (schedule 30/min, events 120/min, scan 6/min) + a body size cap (scan 4 MB, events 4 KB).
+  - Rate limits per device id (schedule 30/min, events 120/min, scan 6/min) + a body size cap (scan 2 MB, events 16 KB).
   - Devices can only write events and scans for their own patient, and read only that patient's schedule.
   - The schedule response holds only what the screen needs (no patient name).
-- The risk is accepted for the LAN prototype and recorded in `docs/decisions.md`. Do not expose port 5000 to the internet; prod Caddy serves only `/api/v1`, `/healthz` over HTTPS.
+- The risk is accepted for the LAN prototype and recorded in `docs/decisions.md`. Do not expose port 5055 to the internet without `DEVICE_PATH_SECRET`; prod Caddy serves only `/api/v1`, `/healthz` over HTTPS.
 
 ## Input validation
-- Every body is a Pydantic model with lengths and ranges. Query params are typed. Upload content type and magic bytes are checked (JPEG `FF D8 FF`, PNG). Images are re-encoded with Pillow before being stored as references (strips EXIF/GPS).
+- Every body and query is parsed by a zod schema with lengths and ranges (`route()` does it, so a route cannot skip it). Upload content type and magic bytes are checked (JPEG `FF D8 FF`, PNG). Reference photos are re-encoded with `sharp` before being stored (strips EXIF/GPS).
 - File paths are generated (uuid), never taken from the user.
-- SQL is only through SQLAlchemy expressions. No f-string SQL.
+- SQL is only through Prisma. The two raw statements (`decrementQty`, the test cleanup) use tagged templates / constants, never string-built input.
 
 ## Secrets
-- No secrets in git: `.env` is ignored and `.env.example` has placeholders. `JWT_SECRET`, `POSTGRES_PASSWORD`, `ANTHROPIC_API_KEY`, `EXPO_ACCESS_TOKEN` come only from env.
+- No secrets in git: `.env` is ignored and `.env.example` has placeholders. `JWT_SECRET`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `GEMINI_API_KEY`, `EXPO_ACCESS_TOKEN` come only from env.
 - The app gets only `EXPO_PUBLIC_*` values, which are public by definition. Never put a secret there.
 - The api refuses to start in prod (`ENV=prod`) if `JWT_SECRET` is the example value or shorter than 32.
 
@@ -41,18 +41,18 @@ description: Use when touching authentication (JWT access/refresh, argon2), devi
 
 ## Health data privacy
 - **Minimum data:** a patient is a display name + an optional note, with no birth date, ID numbers, or address. Medicines and intake records are the data that is needed.
-- **Logs:** ids, counts, timings, and status codes only. Never emails, names, medicine names, OCR text, tokens, or image bytes. `core/logging.py` has a `redact()` filter for keys like `password, token, email, name`.
-- **Claude fallback:** it is off by default. When on, it sends only the image + the list of `id: medicine name strength`, and never patient info. This is documented in Settings/privacy text.
+- **Logs:** ids, counts, timings, and status codes only. Never emails, names, medicine names, text read from a package, tokens, or image bytes. `core/logger.ts` redacts for keys like `password, token, email, name`.
+- **Gemini (free tier):** scans send the package photo + the list of `id, name, strength, barcode` of that box's medicines to Google, never patient names or other personal data. Google may use free-tier inputs to improve its products; the one-line notice is in the app's Settings → Privacy and in `docs/setup.md`. The API key is server-side only.
 - **Retention:** scan images 30 days; device events 180 days; alerts 90 days (cleanup job).
 - **Delete on request:** `DELETE /api/v1/me` deletes the user, their tokens and alerts, and every patient where they were the last caregiver (cascade: medicines, schedules, events, intakes, scans **and image files**, devices unpaired). Test it.
 - **Push bodies** are short ("Lola Rosa missed a dose at 8:00 AM"), because lock screens are visible to others. A setting can hide medicine names.
 
 ## Security review checklist (Milestone 7, and any auth/device change)
 - [ ] No route without auth except: `/healthz`, `/api/v1/auth/*`, device paths
-- [ ] Every patient-scoped route uses `require_patient`; there is a cross-tenant test returning 404
+- [ ] Every patient-scoped route uses `route()` with `:patientId` (it checks the link); the cross-tenant test returns 404; `tests/api/security.test.ts` checks the route registry
 - [ ] Refresh rotation + reuse detection tested
 - [ ] Rate limits on login, signup, device endpoints
-- [ ] Uploads: size, type, magic bytes, re-encode
+- [ ] Uploads: size, type, magic bytes, re-encode (photos), 2 MB cap (scan)
 - [ ] `grep` logs for emails/names in a `make sim` run → none
 - [ ] `.env` not tracked; `git log -p | grep -i secret` is clean
 - [ ] `DELETE /me` removes files on disk

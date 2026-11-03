@@ -149,6 +149,9 @@ export default function Settings() {
           We keep only what is needed: a name for each person, their medicines and dose history. VOICE camera photos are deleted
           after 30 days.
         </AppText>
+        <AppText muted>
+          Package scans use Google Gemini's free tier: Google may use the photos sent for scans to improve its products.
+        </AppText>
       </Card>
 
       <Button title="Sign out" variant="secondary" icon="log-out" onPress={doSignOut} />

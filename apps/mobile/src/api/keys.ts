@@ -5,6 +5,7 @@ export const qk = {
   dashboard: () => ['dashboard'] as const,
   alerts: () => ['alerts'] as const,
   patients: () => ['patients'] as const,
+  nearbyDevices: () => ['devices', 'nearby'] as const,
   patient: (id: number) => ['patient', id] as const,
   today: (id: number) => ['patient', id, 'today'] as const,
   medicines: (id: number) => ['patient', id, 'medicines'] as const,

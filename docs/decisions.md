@@ -95,7 +95,7 @@ One entry per decision. Format: **context**, **choice**, **why**. Newest at the 
 - **Choice:** Thresholds stay as specified (OCR ≥ 80 with an 8-point margin; embedding ≥ 0.85 with a 0.03 margin). The eval set uses "blurry" photos instead of blank boxes. A plain box that can only be told apart by color is correctly "not found".
 - **Why:** A wrong "identified" is worse than "not found". Eval: 14 samples, 85.7% accuracy, 0 wrong medicines, p50 0.66 s, max 1.8 s (budget 8.5 s). Add real camera photos to `tests/vision_samples/` for real numbers.
 
-## D20. Claude fallback request shape
+## D20. Claude fallback request shape [superseded by D25: removed]
 - **Choice:** `AsyncAnthropic` with `max_retries=0` and the timeout set to the time left in the scan budget. Model `claude-sonnet-5-5` with `effort: low`, structured output (a JSON schema `enum` of candidate ids + `"none"`), and server-side refusal fallback (`fallbacks: "default"`). Every error or refusal counts as "none".
 - **Why:** The answer has to fit the 10 s camera limit, and the schema makes it impossible to name a medicine outside the patient's list.
 
@@ -109,8 +109,41 @@ The app and the device are both called VOICE in every user-facing string (app, a
 ## Fixed device address on any laptop (2026-10-31)
 The client runs the repo on their own laptop, which gets internet from a phone hotspot. Phone hotspots give the laptop a different IP on every connection and cannot reserve addresses, but the ESP32 has `BACKEND_URL` compiled in. So the VOICE device joins the laptop's **Windows Mobile hotspot**, whose address is always `192.168.137.1` on every Windows machine: the firmware is flashed once with `http://192.168.137.1:5000` and works with any laptop that clones the repo. The phone app reaches the laptop over the phone hotspot; `scripts/start.ps1` (`start-voice.cmd`) detects that IP on each start and writes `LAN_IP` into `.env`. A cloud server or tunnel was rejected for now: the firmware speaks plain HTTP on port 5000 and the device endpoints have no secret, so they must stay on the local network.
 
-## Optional hosted database: Supabase (2026-10-31)
+## Optional hosted database: Supabase (2026-10-31) [superseded by D22: removed]
 The user wanted free hosting. MySQL was considered and rejected: free Postgres hosts exist (Supabase, Neon) with pgvector, and a port would have rewritten the vector search, upserts and timezone handling for no gain. `DATABASE_URL` in `.env` now overrides the local db container; `DB_POOL_SIZE`/`DB_MAX_OVERFLOW` keep api + worker within the free connection limit. Use the Supavisor **session** pooler (IPv4, supports asyncpg prepared statements). A migration enables RLS on every public table so Supabase's auto-generated REST API exposes nothing; the backend owns the tables and bypasses RLS. Scan and reference image files stay in the local volume (not shared between laptops). Tests always use the local database.
 
 ## One-month cloud deployment: Google Cloud VM + device path secret (2026-10-31)
 The user needs the system online for about a month. Render/Koyeb free tiers cannot host it (512 MB RAM, HTTPS only so the plain-HTTP firmware cannot connect, no free always-on worker); the home PC is behind CGNAT. Chosen: one Google Cloud e2-standard-2 VM in Singapore on the free-trial credit, running the existing prod compose (`deploy/server-setup.sh`), with HTTPS for the app through Caddy and a free `<ip>.sslip.io` name, and port 5000 open for the device. Because the device endpoints are then on the internet and the firmware only sends a fixed device id, `DEVICE_PATH_SECRET` moves them under `/d/<secret>/`: only `BACKEND_URL` changes in the firmware, which the contract already allows. Empty secret = LAN behaviour, unchanged.
+
+## One VOICE for several people, and auto-detect (2026-10-31)
+The client wanted to add a second person to a VOICE that was already paired, and to connect without typing the code. A person now points at their VOICE (`patients.device_id`); a VOICE row exists only while someone uses it. The firmware is unchanged: `GET /api/schedule` merges everyone's doses (ids are still `schedules.id`, so events find their owner), and when a VOICE is shared each dose name starts with the person's first name ("Lola: Losartan 50mg", still cut to 23 characters). The 5 slots are physical, so two people on one VOICE can never use the same slot: this is checked when a medicine gets a slot and when a person joins (409 `slot_taken`). Unknown scans go to the first person on the VOICE.
+**Auto-detect:** an unpaired VOICE keeps polling and getting 403, so the server remembers its id in Redis for 5 minutes (max 20, fails open). `GET /api/v1/devices/nearby` lists those, plus paired VOICEs checking in now and the ones your people already use; the app polls it every 5 s on the pairing screens.
+**Privacy:** joining a VOICE someone else set up is allowed (the code was already enough to pair before), but the VOICE screen only shows names and medicines of people you look after; others appear as "Another person".
+
+## D22. Backend moves to Express + MySQL + Gemini (2026-11-04)
+- **Context:** The backend was FastAPI + PostgreSQL/pgvector with local vision models (barcode, OCR, CLIP). The updated spec asks for Node.js 22 + Express + TypeScript, MySQL 8, Prisma, zod, and Google Gemini (free tier) for scans, with no local AI models. The Expo app and the flashed ESP32 firmware must not change.
+- **Choice:** One `services/api` package with two entrypoints (`src/server.ts`, `src/worker.ts`) and the same layering (routes → services → repositories). Every `/api/v1` path, body and answer and the three device paths are unchanged, and the old tests were ported to Vitest + Supertest against real MySQL and Redis (185 tests). Redis, WebSocket realtime, the worker (now `node-cron`) and Docker Compose stay. The Python service, Alembic, pgvector, the Supabase option (Postgres only) and the Python simulator were removed. The simulator is now `tools/device-sim/sim.mjs` (Node, no dependencies).
+- **Why:** Matches the new spec. Behaviour was kept identical on purpose, so the app needed only one Settings sentence (the Gemini notice), two scan labels and the new default port.
+- **Data:** PostgreSQL data is not migrated (the demo seed recreates the demo person). An `.env` from the old version keeps working: unused variables are ignored, and `start-voice.cmd` adds the MySQL ones.
+
+## D23. API port 5055 (2026-11-04)
+- **Context:** The earlier version published port 5000. The spec fixes the device contract on **5055**, and the user's `.env` already had `API_PORT=5055`.
+- **Choice:** The API listens on 5055 inside and outside the container (`${API_PORT:-5055}:5055`). Compose, Makefile, scripts, Caddy and docs were updated. Firmware flashed with `:5000` needs `API_PORT=5000` in `.env` (or a re-flash); nothing else differs.
+
+## D24. Slot uniqueness is checked in code, not by an index (2026-11-04)
+- **Context:** PostgreSQL had a partial unique index on `(patient_id, slot)` for active medicines. MySQL has no partial indexes, and slots are shared by everyone on one VOICE anyway, so the rule never fit a single-column index.
+- **Choice:** `medicineService.checkSlot` and `patientService.pairDevice` enforce it and answer 409 `slot_taken`. The check constraints (slot 1–5, qty ≥ 0, status values) moved to zod validation, because Prisma cannot model them.
+- **Why:** Keeps `schema.prisma` the single source of truth. Two simultaneous requests could in theory both pass the check; accepted for a household app.
+
+## D25. Scan pipeline: Gemini reads, code decides (2026-11-04)
+- **Choice:** One Gemini call per scan (JSON-only response schema; the prompt demands `null` when unsure). Code accepts a match only if the id belongs to that box and `confidence ≥ SCAN_MIN_CONFIDENCE` (0.7). With no id it fuzzy-matches the printed name and strength (similarity ≥ 0.8, a different strength rules a candidate out, 0.1 lead over the runner-up). The answer to the camera is read from MySQL, never from the model; `readExpiry` is stored for information only. The call is aborted at 8 s, the pipeline is capped at 9 s, any failure answers `{"found":false}`, and the camera never sees a 5xx. One scan at a time per box (Redis lock) and at most `GEMINI_MAX_PER_MINUTE` calls per minute keep the free tier from returning 429.
+- **App compatibility:** `scans.method` keeps its old values for the app: `llm` = Gemini picked the id, `ocr` = the fuzzy name match, `none`. The `ocrExpiry` field now carries the expiry Gemini read.
+- **Privacy:** Google may use free-tier inputs to improve its products. The notice is in the app's Settings → Privacy and in `docs/setup.md`. Only the photo and the box's medicine list (id, name, strength, barcode) are sent. Reference photos are sent only with `SCAN_USE_REFERENCES=true`.
+- **Model:** `GEMINI_MODEL` defaults to `gemini-2.5-flash`; change it in `.env` if Google retires it. The request was written against the SDK and verified to reach Google (a placeholder key is rejected), but it has not run against a real key because none was available: run `make eval-vision` once with your key.
+
+## D26. Test strategy on MySQL (2026-11-04)
+- **Choice:** Each Vitest test starts from an empty database (`DELETE FROM users / patients / devices`, which cascades) and a frozen clock (`Date` only, 2026-10-30 07:00 PH). The harness refuses to run unless the database name ends in `_test`. Gemini is replaced by a fake and the Expo push call by an injected `fetch`. The route registry makes the security checks structural: `route()` always authenticates, validates and checks patient access.
+- **Why:** Rolling back a transaction per test (as before) does not fit Prisma's connection pool, and truncating every table per test was too slow.
+
+## D27. Container user keeps uid 10001 (2026-11-04)
+The Python image ran as uid 10001. The Node image creates the same user, so an existing `scans` volume (up to 30 days of photos) stays writable after the upgrade.

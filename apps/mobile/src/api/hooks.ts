@@ -12,6 +12,7 @@ import type {
   Me,
   Medicine,
   MedicineInput,
+  NearbyDevice,
   NotifyPrefs,
   Page,
   Patient,
@@ -44,6 +45,14 @@ export const useHistory = (id: number, from: string, to: string) =>
   useQuery({ queryKey: qk.history(id, from, to), queryFn: () => api<History>(`${p(id)}/history`, { query: { from, to } }) });
 export const useDevice = (id: number) =>
   useQuery({ queryKey: qk.device(id), queryFn: () => api<Device>(`${p(id)}/device`), retry: false });
+/** Polls while a pairing screen is open, so a VOICE that was just switched on shows up by itself. */
+export const useNearbyDevices = (enabled = true) =>
+  useQuery({
+    queryKey: qk.nearbyDevices(),
+    queryFn: () => api<NearbyDevice[]>('/api/v1/devices/nearby'),
+    enabled,
+    refetchInterval: 5000,
+  });
 export const useCaregivers = (id: number) =>
   useQuery({ queryKey: qk.caregivers(id), queryFn: () => api<Caregiver[]>(`${p(id)}/caregivers`) });
 export const useAlerts = () =>
@@ -85,11 +94,16 @@ export function useLeavePatient(id: number) {
   });
 }
 
-export function usePairDevice(id: number) {
+type PairBody = { deviceId: string; cameraId?: string | null };
+
+/** `id` may be left out when the person is created in the same step; pass `patientId` then. */
+export function usePairDevice(id?: number) {
   const inv = useInvalidate();
   return useMutation({
-    mutationFn: (body: { deviceId: string; cameraId?: string | null }) => api<Device>(`${p(id)}/device`, { method: 'PUT', body }),
-    onSuccess: () => inv([...qk.device(id)], [...qk.dashboard()]),
+    mutationFn: ({ patientId = id, ...body }: PairBody & { patientId?: number }) =>
+      api<Device>(`${p(patientId!)}/device`, { method: 'PUT', body }),
+    onSuccess: (_d, { patientId = id }) =>
+      inv([...qk.device(patientId!)], [...qk.nearbyDevices()], [...qk.dashboard()]),
   });
 }
 
@@ -97,7 +111,7 @@ export function useUnpairDevice(id: number) {
   const inv = useInvalidate();
   return useMutation({
     mutationFn: () => api<void>(`${p(id)}/device`, { method: 'DELETE' }),
-    onSuccess: () => inv([...qk.device(id)], [...qk.dashboard()]),
+    onSuccess: () => inv([...qk.device(id)], [...qk.nearbyDevices()], [...qk.dashboard()]),
   });
 }
 

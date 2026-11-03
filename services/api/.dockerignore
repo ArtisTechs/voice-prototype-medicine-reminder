@@ -1,8 +1,7 @@
-.venv
-**/__pycache__
-**/*.pyc
-.pytest_cache
-.ruff_cache
+node_modules
+dist
 .env
-data
+.env.*
+tests
+coverage
 *.log

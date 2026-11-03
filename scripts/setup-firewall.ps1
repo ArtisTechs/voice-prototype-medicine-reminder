@@ -4,7 +4,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
   Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
   exit
 }
-foreach ($r in @(@{Name = 'VOICE API 5000'; Port = 5000 }, @{Name = 'VOICE Expo 8081'; Port = 8081 })) {
+foreach ($r in @(@{Name = 'VOICE API 5055'; Port = 5055 }, @{Name = 'VOICE Expo 8081'; Port = 8081 })) {
   Get-NetFirewallRule -DisplayName $r.Name -ErrorAction SilentlyContinue | Remove-NetFirewallRule
   New-NetFirewallRule -DisplayName $r.Name -Direction Inbound -Protocol TCP -LocalPort $r.Port -Action Allow -Profile Any | Out-Null
   Write-Host "Opened port $($r.Port)"

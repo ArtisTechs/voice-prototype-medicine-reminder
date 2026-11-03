@@ -5,14 +5,15 @@ import { useForm } from 'react-hook-form';
 import { Alert, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
-import { useDevice, usePairDevice, useUnpairDevice } from '../../../../api/hooks';
+import { useDevice, useNearbyDevices, usePairDevice, useUnpairDevice } from '../../../../api/hooks';
 import { AppText } from '../../../../components/AppText';
 import { Button } from '../../../../components/Button';
 import { Card } from '../../../../components/Card';
 import { Screen } from '../../../../components/Screen';
-import { Banner, CardSkeleton, ErrorState } from '../../../../components/States';
+import { Banner, CardSkeleton, ErrorState, errorMessage } from '../../../../components/States';
 import { StatusBadge } from '../../../../components/StatusBadge';
 import { applyServerErrors, FormTextField } from '../../../../features/forms';
+import { VoicePicker } from '../../../../features/patients/VoicePicker';
 import { ApiError } from '../../../../lib/apiError';
 import { ago } from '../../../../lib/format';
 import { spacing } from '../../../../theme/tokens';
@@ -26,25 +27,26 @@ const code = z
 const schema = z.object({ deviceId: code, cameraId: z.union([code, z.literal('')]) });
 type Values = z.infer<typeof schema>;
 
-function PairForm({ pid, initial }: { pid: number; initial?: Values }) {
+function PairForm({ pid, initial, onDone }: { pid: number; initial?: Values; onDone?: () => void }) {
   const pair = usePairDevice(pid);
   const [formError, setFormError] = useState<string | null>(null);
   const { control, handleSubmit, setError } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: initial ?? { deviceId: 'pillbox', cameraId: '' },
+    defaultValues: initial ?? { deviceId: '', cameraId: '' },
   });
   const onSubmit = handleSubmit(async (v) => {
     setFormError(null);
     try {
       await pair.mutateAsync({ deviceId: v.deviceId.trim(), cameraId: v.cameraId.trim() || null });
+      onDone?.();
     } catch (e) {
       setFormError(applyServerErrors(e, setError, { deviceId: 'deviceId', cameraId: 'cameraId' }, { device_taken: 'deviceId' }));
     }
   });
   return (
     <Card>
-      <AppText variant="title">Pair VOICE</AppText>
-      <AppText>Type the VOICE code. The demo VOICE uses “pillbox”.</AppText>
+      <AppText variant="title">Type the VOICE code</AppText>
+      <AppText>The demo VOICE uses “pillbox”.</AppText>
       {formError ? <Banner tone="error" message={formError} /> : null}
       <FormTextField control={control} name="deviceId" label="VOICE code" autoCapitalize="none" autoCorrect={false} />
       <FormTextField
@@ -55,8 +57,35 @@ function PairForm({ pid, initial }: { pid: number; initial?: Values }) {
         autoCapitalize="none"
         autoCorrect={false}
       />
-      <Button title="Pair VOICE" icon="link" onPress={() => onSubmit()} loading={pair.isPending} />
+      <Button title="Connect VOICE" icon="link" onPress={() => onSubmit()} loading={pair.isPending} />
     </Card>
+  );
+}
+
+/** Found VOICEs to tap, with typing the code as the fallback. */
+function Connect({ pid, currentId, onDone }: { pid: number; currentId?: string; onDone?: () => void }) {
+  const nearby = useNearbyDevices();
+  const pair = usePairDevice(pid);
+  const [typing, setTyping] = useState(false);
+  const connect = (deviceId: string) => pair.mutate({ deviceId }, { onSuccess: onDone });
+  return (
+    <>
+      <AppText variant="title">{currentId ? 'Move to another VOICE' : 'Connect VOICE'}</AppText>
+      <AppText muted>One VOICE can remind several people. Each person needs their own slots.</AppText>
+      {pair.isError ? <Banner tone="error" message={errorMessage(pair.error)} /> : null}
+      <VoicePicker
+        devices={nearby.data}
+        currentId={currentId}
+        pendingId={pair.isPending ? pair.variables?.deviceId : null}
+        actionLabel="Connect"
+        onPick={connect}
+      />
+      {typing ? (
+        <PairForm pid={pid} onDone={onDone} />
+      ) : (
+        <Button title="Type the code instead" variant="ghost" icon="keypad" onPress={() => setTyping(true)} />
+      )}
+    </>
   );
 }
 
@@ -67,12 +96,19 @@ export default function DeviceScreen() {
   const unpair = useUnpairDevice(pid);
   const [changing, setChanging] = useState(false);
   const notPaired = q.isError && q.error instanceof ApiError && q.error.code === 'no_device';
+  const others = q.data ? q.data.people.filter((p) => !p.current) : [];
 
   const confirmUnpair = () =>
-    Alert.alert('Unpair this VOICE?', 'It will stop getting the schedule until it is paired again.', [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Unpair', style: 'destructive', onPress: () => unpair.mutate() },
-    ]);
+    Alert.alert(
+      'Remove from this VOICE?',
+      others.length
+        ? 'This person stops getting reminders. The others on this VOICE keep theirs.'
+        : 'It will stop getting the schedule until it is connected again.',
+      [
+        { text: 'Keep it', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => unpair.mutate() },
+      ],
+    );
 
   return (
     <Screen refreshing={q.isRefetching} onRefresh={q.refetch}>
@@ -80,7 +116,7 @@ export default function DeviceScreen() {
       {q.isPending ? (
         <CardSkeleton lines={5} />
       ) : notPaired ? (
-        <PairForm pid={pid} />
+        <Connect pid={pid} />
       ) : q.isError ? (
         <ErrorState error={q.error} onRetry={q.refetch} />
       ) : (
@@ -98,26 +134,39 @@ export default function DeviceScreen() {
               <Banner tone="warning" message="Check that VOICE is plugged in and the WiFi is working." />
             ) : null}
           </Card>
+          {others.length ? (
+            <Card>
+              <AppText variant="title">People on this VOICE</AppText>
+              {q.data.people.map((p, i) => (
+                <AppText key={p.patientId ?? `other-${i}`} variant={p.current ? 'bodyStrong' : 'body'}>
+                  {p.name}
+                  {p.current ? ' (this person)' : ''}
+                </AppText>
+              ))}
+              <AppText muted>On VOICE, each medicine starts with the person's first name.</AppText>
+            </Card>
+          ) : null}
           <AppText variant="title">Slots</AppText>
           {q.data.slots.map((s) => (
             <Card key={s.slot}>
               <View style={styles.head}>
                 <AppText variant="bodyStrong" style={styles.flex}>
-                  Slot {s.slot}: {s.medicineName ?? 'empty'}
+                  Slot {s.slot}: {s.medicineName ?? (s.personName ? 'in use' : 'empty')}
                 </AppText>
                 {s.lidOpen === null ? null : (
                   <AppText variant="bodyStrong">{s.lidOpen ? 'Lid open' : 'Lid closed'}</AppText>
                 )}
               </View>
+              {s.personName ? <AppText muted>For {s.personName}</AppText> : null}
               {s.lastEventAt ? <AppText muted>Lid last moved {ago(s.lastEventAt)}</AppText> : null}
             </Card>
           ))}
           {changing ? (
-            <PairForm pid={pid} initial={{ deviceId: q.data.deviceId, cameraId: q.data.cameraId }} />
+            <Connect pid={pid} currentId={q.data.deviceId} onDone={() => setChanging(false)} />
           ) : (
-            <Button title="Change VOICE code" variant="secondary" onPress={() => setChanging(true)} />
+            <Button title="Move to another VOICE" variant="secondary" icon="swap-horizontal" onPress={() => setChanging(true)} />
           )}
-          <Button title="Unpair VOICE" variant="danger" onPress={confirmUnpair} loading={unpair.isPending} />
+          <Button title="Remove from this VOICE" variant="danger" onPress={confirmUnpair} loading={unpair.isPending} />
         </>
       )}
     </Screen>

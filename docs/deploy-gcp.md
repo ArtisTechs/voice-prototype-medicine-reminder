@@ -1,11 +1,11 @@
 # Deploy VOICE on Google Cloud (free trial, about one month)
 
-Everything (API, worker, scan recognition, Postgres, Redis, HTTPS) runs on one virtual machine with the production Docker setup. The VOICE device and the phone app reach it from any network with internet.
+Everything (API, worker, MySQL, Redis, HTTPS; scan recognition calls Google Gemini) runs on one virtual machine with the production Docker setup. The VOICE device and the phone app reach it from any network with internet.
 
 ```
  phone app ──HTTPS──► https://34-87-1-2.sslip.io ─┐
                                                   ├─► VM (Singapore): Caddy → api, worker, db, redis
- VOICE device ──HTTP──► http://34.87.1.2:5000/d/<secret> ─┘
+ VOICE device ──HTTP──► http://34.87.1.2:5055/d/<secret> ─┘
 ```
 
 ## 1. Create the account (once)
@@ -25,10 +25,10 @@ Everything (API, worker, scan recognition, Postgres, Redis, HTTPS) runs on one v
    - Network interfaces → click the default interface → **External IPv4 address** → **Reserve static external IP address**, name `voice-ip` → *Reserve*. (A static IP never changes, so the device is flashed once.)
 5. Click **Create**. When the VM is green, write down its **External IP**, e.g. `34.87.1.2`.
 
-## 3. Open port 5000 for the device
+## 3. Open port 5055 for the device
 1. **VPC network → Firewall → Create firewall rule**.
 2. Name `voice-device`, Direction **Ingress**, Action **Allow**, Targets **Specified target tags** → `voice-server`.
-3. Source IPv4 ranges `0.0.0.0/0`. Protocols and ports: **TCP** `5000`. → *Create*.
+3. Source IPv4 ranges `0.0.0.0/0`. Protocols and ports: **TCP** `5055`. → *Create*.
 
 ## 4. Get the code onto the server
 On the VM row click **SSH** (a terminal opens in the browser). Then:
@@ -53,7 +53,7 @@ bash deploy/server-setup.sh --demo
 `--demo` adds the demo account (demo@example.com / demo1234) and patient; leave it off for a clean start. The first run installs Docker, builds the images (10–20 min) and prints:
 ```
 App API (EXPO_PUBLIC_API_URL):  https://34-87-1-2.sslip.io
-VOICE device BACKEND_URL:       http://34.87.1.2:5000/d/3f9c...
+VOICE device BACKEND_URL:       http://34.87.1.2:5055/d/3f9c...
 ```
 Open `https://34-87-1-2.sslip.io/healthz` in a browser: it must show `"status":"ok"`.
 
@@ -62,7 +62,7 @@ Open `https://34-87-1-2.sslip.io/healthz` in a browser: it must show `"status":"
 ## 6. Flash the device
 In both ESP32 sketches set the printed value, then flash:
 ```cpp
-#define BACKEND_URL "http://34.87.1.2:5000/d/3f9c..."
+#define BACKEND_URL "http://34.87.1.2:5055/d/3f9c..."
 ```
 The device needs a Wi-Fi network with internet (home Wi-Fi or a phone hotspot). In the app, the person's **VOICE** screen turns **Online** within a minute.
 
@@ -89,3 +89,6 @@ The secret in the URL is the device's password: the bare `/api/schedule`, `/api/
 ## End of the month
 1. Back up the data (table above), then download it: SSH window → gear icon → **Download file** → `/home/<you>/voice/voice-backup.sql`.
 2. **Compute Engine → VM instances** → delete `voice-server`; **VPC network → IP addresses** → release `voice-ip`. Deleting both stops all usage of the credit.
+
+## Scans need a Gemini key
+Edit `.env` on the server and set `GEMINI_API_KEY=` (free key: https://aistudio.google.com/apikey), then `sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`. Google may use free-tier inputs to improve its products.

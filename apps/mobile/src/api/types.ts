@@ -23,9 +23,12 @@ export type Slot = {
   slot: number;
   medicineId: number | null;
   medicineName: string | null;
+  /** Whose medicine it is when the VOICE is shared ("Another person" for people you don't look after). */
+  personName: string | null;
   lidOpen: boolean | null;
   lastEventAt: string | null;
 };
+export type DevicePerson = { patientId: number | null; name: string; current: boolean };
 export type Device = {
   deviceId: string;
   cameraId: string;
@@ -33,6 +36,16 @@ export type Device = {
   lastSeen: string | null;
   cameraLastSeen: string | null;
   slots: Slot[];
+  people: DevicePerson[];
+};
+/** A VOICE to offer when pairing: an unpaired one checking in now, or one already in use. */
+export type NearbyDevice = {
+  deviceId: string;
+  paired: boolean;
+  status: 'online' | 'offline';
+  lastSeen: string | null;
+  people: number;
+  mine: boolean;
 };
 
 export type Schedule = { id: number; medicineId: number; time: string; daysOfWeek: number[]; active: boolean };

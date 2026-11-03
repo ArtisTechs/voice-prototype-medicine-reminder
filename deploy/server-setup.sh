@@ -36,25 +36,26 @@ if [[ ! -f .env ]]; then
   set_env APP_DOMAIN "$DOMAIN"
   set_env CORS_ORIGINS "https://$DOMAIN"
   set_env JWT_SECRET "$(openssl rand -hex 32)"
-  set_env POSTGRES_PASSWORD "$(openssl rand -hex 16)"
+  set_env MYSQL_PASSWORD "$(openssl rand -hex 16)"
+  set_env MYSQL_ROOT_PASSWORD "$(openssl rand -hex 16)"
   set_env DEVICE_PATH_SECRET "$(openssl rand -hex 12)"
   echo "== Created .env for $DOMAIN"
 fi
 get_env() { grep "^$1=" .env | cut -d= -f2-; }
 
-# 4. Start (first build: 10-20 min)
+# 4. Start (first build: a few minutes)
 echo "== Building and starting VOICE"
 "${COMPOSE[@]}" up -d --build
 
 echo "== Waiting for the API"
 for _ in $(seq 1 120); do
-  curl -fsS http://localhost:5000/healthz >/dev/null 2>&1 && break
+  curl -fsS http://localhost:5055/healthz >/dev/null 2>&1 && break
   sleep 5
 done
-curl -fsS http://localhost:5000/healthz >/dev/null || { echo "API not healthy yet. Check: ${COMPOSE[*]} logs api"; exit 1; }
+curl -fsS http://localhost:5055/healthz >/dev/null || { echo "API not healthy yet. Check: ${COMPOSE[*]} logs api"; exit 1; }
 
 if $DEMO; then
-  "${COMPOSE[@]}" exec -T api python -m app.seed
+  "${COMPOSE[@]}" exec -T api node dist/prisma/seed.js
 fi
 
 IP=$(get_env LAN_IP)
@@ -63,7 +64,7 @@ cat <<EOF
 ================ VOICE is running ================
 App API (EXPO_PUBLIC_API_URL):  https://$(get_env APP_DOMAIN)
 Check in a browser:             https://$(get_env APP_DOMAIN)/healthz
-VOICE device BACKEND_URL:       http://$IP:5000/d/$(get_env DEVICE_PATH_SECRET)
+VOICE device BACKEND_URL:       http://$IP:5055/d/$(get_env DEVICE_PATH_SECRET)
 Keep the device URL private: it is the device's password.
 Logs: ${COMPOSE[*]} logs -f api
 EOF

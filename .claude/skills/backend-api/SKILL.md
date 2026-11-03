@@ -1,73 +1,71 @@
 ---
 name: backend-api
-description: Use when writing FastAPI code in services/api: routers, services, repositories, Pydantic v2 schemas, dependency injection, the error format, pagination, OpenAPI tags, API versioning (/api/v1 vs fixed device paths), and settings from environment variables.
+description: Use when writing Express + TypeScript code in services/api: routes, services, repositories, zod schemas, the route() helper, the error format, pagination, OpenAPI docs, API versioning (/api/v1 vs fixed device paths), and settings from environment variables.
 ---
 
-# Backend API conventions (FastAPI, Python 3.12)
+# Backend API conventions (Express 5, TypeScript, Node 22)
 
 ## Layers (see **architecture**)
-`router → service → repository → model`. The router validates and shapes the response, the service decides and commits, and the repository runs the queries.
+`route → service → repository → Prisma`. The route validates and shapes the response, the service decides and runs transactions, the repository runs the queries.
 
-```python
-# app/api/v1/medicines.py
-router = APIRouter(prefix="/patients/{patient_id}/medicines", tags=["medicines"])
-
-@router.post("", response_model=MedicineOut, status_code=201)
-async def create(patient_id: int, body: MedicineCreate,
-                 db: DbSession, user: CurrentUser) -> MedicineOut:
-    await require_patient(db, user, patient_id)            # 404 if not linked
-    med = await medicine_service.create_medicine(db, patient_id, body)
-    return MedicineOut.model_validate(med)
+```ts
+// src/routes/v1/medicines.ts
+route(medicinesRouter, 'post', '/patients/:patientId/medicines',
+  { tag: 'medicines', summary: 'Add a medicine', body: medicineCreate, status: 201 },
+  async ({ params, body }) => medicineService.toOut(await medicineService.create(params.patientId, body)));
 ```
-```python
-# app/services/medicine_service.py
-async def create_medicine(db: AsyncSession, patient_id: int, data: MedicineCreate) -> Medicine:
-    if data.slot and await medicine_repo.slot_in_use(db, patient_id, data.slot):
-        raise Conflict("slot_taken", f"Slot {data.slot} already has a medicine.")
-    med = await medicine_repo.add(db, Medicine(patient_id=patient_id, **data.model_dump()))
-    await db.commit()
-    await publish(patient_id, "medicine.updated")
-    return med
+```ts
+// src/services/medicineService.ts
+export async function create(patientId: number, data: MedicineCreate) {
+  await checkSlot(patientId, data.slot);                      // throws conflict('slot_taken', ...)
+  const med = await medRepo.create({ patientId, ...fields });
+  await publish(patientId, 'medicine.updated', { medicineId: med.id });   // after the write
+  return get(patientId, med.id);
+}
 ```
 
-## Dependencies (`app/api/deps.py`)
-`DbSession = Annotated[AsyncSession, Depends(get_db)]`, `CurrentUser = Annotated[User, Depends(current_user)]`, `Settings = Annotated[Settings, Depends(get_settings)]`, `require_patient(db, user, pid, owner=False)`. Inject them; never import a global session.
+## `route()` (`src/core/http.ts`)
+Every `/api/v1` route goes through it. It does, in order: bearer auth (`auth: true` is the default) → numeric `:params` → **patient access** (any path with `:patientId` checks the caregiver's link and answers 404 for strangers; `owner: true` also needs the owner role) → zod parse of `body` / `query` (422 `validation_error`) → your handler. The handler returns the JSON body; `status: 204` returns nothing. Because it registers each route in `registry`, `tests/api/security.test.ts` can prove that no route is unguarded. Do not write raw `router.get(...)` for `/api/v1`.
 
-## Schemas (Pydantic v2)
-- Base class `ApiModel(BaseModel)` with `model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)`. Responses are serialized `by_alias`.
-- `XCreate` has required fields with constraints (`Field(min_length=1, max_length=80)`). `XUpdate` has all fields optional, applied with `model_dump(exclude_unset=True)`. `XOut` uses `from_attributes`.
-- Device schemas (`schemas/device.py`) **do not** use the camel alias base. They match the contract field-for-field.
+Device routes (`src/routes/device/index.ts`) are plain Express handlers on purpose: the firmware, not the app, defines them (see **device-contract**).
+
+## Schemas (zod, `src/schemas/`)
+- Request JSON is camelCase. `XCreate` has required fields with limits; `XUpdate` has every field optional and is applied only for keys that are present (`undefined` = leave alone, `null` = clear, for nullable columns).
+- Blank text from forms becomes `null` (`optText` in `schemas/common.ts`).
+- Responses are built by service/route code as plain objects (camelCase). There is no response schema layer; the API tests pin the shapes.
+- Device schemas (`schemas/device.ts`) match the contract field for field.
 
 ## Errors
-All errors use one shape:
+One shape everywhere:
 ```json
 {"error": {"code": "slot_taken", "message": "Slot 2 already has a medicine.", "details": null}}
 ```
-- Raise `AppError` subclasses from `app/core/errors.py`: `NotFound(404)`, `Conflict(409)`, `BadRequest(400)`, `Unauthorized(401)`, `Forbidden(403)`, `RateLimited(429)`.
-- Handlers convert `RequestValidationError` → 422 `validation_error` with `details=[{field, message}]`, and `HTTPException` → the same shape. Unhandled errors → 500 `internal_error` (logged with request id, no body).
-- Resources the user cannot access → **404**, not 403.
+- Throw the helpers from `src/core/errors.ts`: `notFound` 404, `conflict` 409, `badRequest` 400, `unauthorized` 401, `forbidden` 403, `tooLarge` 413, `unsupportedMedia` 415, `rateLimited` 429.
+- zod failures → 422 `validation_error` with `details=[{field, message}]` (`field` is the camelCase path, e.g. `doseAmount`). Bad JSON → 422. Unhandled → 500 `internal_error` (logged with the error class and stack, never the body).
+- Something the caregiver may not see → **404**, not 403.
 
 ## Pagination
-List endpoints that can grow (`alerts`, `scans`, `history` events) take `?limit=50&offset=0` (limit ≤ 200) and return `Page[T] = {items, total, limit, offset}`. Small fixed lists (medicines, schedules) return plain arrays.
+Lists that can grow (`alerts`, `scans`) take `?limit=50&offset=0` (limit ≤ 200) and return `{items, total, limit, offset}`. Small fixed lists (medicines, schedules) return arrays.
 
 ## Versioning and paths
-- `/api/v1/...` is the app API. Breaking changes go in `/api/v2`, never edit v1 in place.
-- `/api/schedule`, `/api/scan`, `/api/events` are the device API, frozen (see **device-contract**).
-- `/api/v1/ws` is the WebSocket. `/healthz` is liveness + DB + Redis check. `/docs` (OpenAPI) is on in dev only (`ENABLE_DOCS`).
-- **OpenAPI tags:** `auth, me, patients, invites, devices, medicines, schedules, today, history, alerts, scans, dashboard, device-firmware`.
+- `/api/v1/...` is the app API. Breaking changes go in `/api/v2`; never change v1 in place.
+- `/api/schedule`, `/api/scan`, `/api/events` are the device API, frozen. With `DEVICE_PATH_SECRET` set they live under `/d/<secret>/`.
+- `/api/v1/ws?token=` is the WebSocket (`src/realtime/wsServer.ts`). `/healthz` checks MySQL + Redis.
+- **OpenAPI** is built from the route registry and served at `/docs` + `/openapi.json` only when `ENABLE_DOCS=true` (dev). Tags: `auth, me, patients, invites, devices, medicines, schedules, today, history, alerts, scans, dashboard, device-firmware`.
 
-## Settings (`app/core/config.py`)
-`class Settings(BaseSettings)` with `model_config = SettingsConfigDict(env_file=None)`. Every value comes from the env (compose passes `.env`). `get_settings()` is `lru_cache`d. Group by prefix: `DATABASE_URL`, `REDIS_URL`, `JWT_*`, `DEVICE_TZ`, `SCAN_*`, `VISION_*`, `EXPO_*`, `CORS_ORIGINS`. Add every new setting to `.env.example` with a comment.
+## Settings (`src/core/config.ts`)
+One zod schema over `process.env`; `settings()` parses once and the result is shared (tests may change fields). Every new variable goes in `.env.example` with a comment and in `docs/setup.md`. Groups: `DATABASE_URL`, `REDIS_URL`, `JWT_*`, `DEVICE_*`, `SCAN_*`, `GEMINI_*`, `EXPO_*`, `CORS_ORIGINS`, `MYSQL_*` (compose only).
 
-## Async rules
-- Everything is `async def`. CPU-heavy vision runs in `run_in_threadpool` / a bounded executor.
-- Never call `requests`. Use `httpx.AsyncClient`. Time comes from `app.core.timeutil.utcnow()`/`device_now()` so tests can freeze it.
+## Async and time
+- Everything async; never block the event loop (sharp and argon2 already run off-thread).
+- Time comes from `utcnow()` / `deviceToday()` in `src/core/timeutil.ts` so tests can freeze `Date`. Never `new Date(string)` for wall-clock values; use the helpers.
+- Transactions: `prisma.$transaction(async (tx) => ...)` and pass `tx` to repositories (they take an optional `db`). Publish realtime/push **after** the transaction commits.
 
 ## Logging
-`structlog`-style JSON lines through `app.core.logging.get_logger(__name__)`. Log ids and timings, never names, emails, medicine names, or tokens (see **security-privacy**).
+`getLogger('name')` (pino JSON lines). Log ids, counts and timings only; never names, emails, tokens, medicine names or package text (`logger.ts` redacts the usual keys as a second line of defence).
 
 ## Endpoint checklist
-- [ ] Tag + `response_model` + status code; 404 on foreign resources
-- [ ] Service owns the commit; realtime publish after the commit
-- [ ] API test: happy path, validation error, access by another caregiver → 404
+- [ ] `route()` with tag, summary, schemas and status code
+- [ ] Service owns the transaction; realtime publish after it
+- [ ] API test: happy path, validation error, another caregiver → 404
 - [ ] `docs/api.md` updated

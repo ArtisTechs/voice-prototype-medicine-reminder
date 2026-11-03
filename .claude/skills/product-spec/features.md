@@ -1,6 +1,6 @@
 # Features: acceptance criteria
 
-Each criterion is testable. "AC" items marked (API) are covered by pytest; (UI) by Jest/RNTL or a manual check.
+Each criterion is testable. "AC" items marked (API) are covered by Vitest; (UI) by Jest/RNTL or a manual check.
 
 ## 1. Account
 - AC1 (API) `POST /api/v1/auth/signup {email, password>=8, name}` creates a caregiver and returns access + refresh tokens. A duplicate email returns 409 `email_taken`.
@@ -23,7 +23,7 @@ Each criterion is testable. "AC" items marked (API) are covered by pytest; (UI) 
 ## 4. Medicines
 - AC1 (API) Required: name, doseAmount (int ≥1, default 1), qty (≥0). Optional: strength, form, doseUnit, instructions (≤200), slot (1–5, unique per patient among active medicines), barcode (digits 8–14 or free text ≤64), expiryDate, lowStockThreshold (default 5), refillLeadDays (default 3).
 - AC2 (API) A slot already taken returns 409 `slot_taken`.
-- AC3 (API) Reference photos: `POST /medicines/{id}/photos` (multipart, `angle` = front|back|side), JPEG/PNG ≤ 8 MB. Stores the embedding. Max 12 per medicine.
+- AC3 (API) Reference photos: `POST /medicines/{id}/photos` (multipart, `angle` = front|back|side), JPEG/PNG ≤ 8 MB. Re-encoded (EXIF stripped). Max 12 per medicine.
 - AC4 (UI) A barcode can be scanned with the phone camera (EAN-13/EAN-8/UPC/Code128/QR) or typed.
 - AC5 (UI) Expiry is chosen with a date picker, never typed free-form.
 

@@ -19,25 +19,30 @@ cp .env.example .env
 Edit `.env`:
 - `LAN_IP=192.168.0.215` (your IP)
 - `JWT_SECRET=` paste the output of `make secret`
-- `POSTGRES_PASSWORD=` anything long
+- `MYSQL_PASSWORD=` and `MYSQL_ROOT_PASSWORD=` anything long
+- `GEMINI_API_KEY=` a free key from https://aistudio.google.com/apikey (needed for package scans; everything else works without it)
+
+> **Privacy notice (free tier):** Google may use what is sent to the free Gemini tier (the package photos and the list of registered medicine names) to improve its products. The same one-line notice is in the app under Settings → Privacy. The key stays in `.env` on the server: never in the app, the firmware or git.
 
 ## 4. Open the firewall (PowerShell as Administrator)
 The WiFi network must use the **Private** profile (Settings → Network → Wi-Fi → your network → Private).
 ```powershell
-New-NetFirewallRule -DisplayName "MedRem API 5000"  -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow -Profile Private
-New-NetFirewallRule -DisplayName "MedRem Expo 8081" -Direction Inbound -Protocol TCP -LocalPort 8081 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "VOICE API 5055"  -Direction Inbound -Protocol TCP -LocalPort 5055 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "VOICE Expo 8081" -Direction Inbound -Protocol TCP -LocalPort 8081 -Action Allow -Profile Private
 ```
 
 ## 5. Start
 ```bash
 make up        # = docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
-make ps        # db, redis, api (healthy), worker, mobile, adminer
+make ps        # db (MySQL), redis, api (healthy), worker, mobile, adminer
 ```
-The first build downloads the Python and vision dependencies and the CLIP weights (~2–3 GB, 10–20 min). Later starts take seconds. The API runs migrations and seeds the demo data at startup.
+The first build installs the Node dependencies (a few minutes). Later starts take seconds. The API runs the database migrations and seeds the demo data at startup.
 
-Check from the PC (`http://localhost:5000/healthz`) and from the phone's browser (`http://<LAN_IP>:5000/healthz`). Both must show `{"status":"ok",...}`.
+Check from the PC (`http://localhost:5055/healthz`) and from the phone's browser (`http://<LAN_IP>:5055/healthz`). Both must show `{"status":"ok",...}`.
 
-> **Port 5000 already in use?** The firmware needs 5000, so stop whatever holds it (`docker ps`; `Get-NetTCPConnection -LocalPort 5000`). For development without the real pillbox you can set `API_PORT=5055` in `.env`; then also set `EXPO_PUBLIC_API_URL=http://<LAN_IP>:5055`.
+> **Port 5055 already in use?** The firmware needs 5055, so stop whatever holds it (`docker ps`; `Get-NetTCPConnection -LocalPort 5055`). For development without the real pillbox you can set `API_PORT=5056` in `.env`; then also set `EXPO_PUBLIC_API_URL=http://<LAN_IP>:5056`.
+
+> **An `.env` from the PostgreSQL version?** `start-voice.cmd` upgrades it automatically (adds the `MYSQL_*` values, removes the old database settings). By hand: add `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `GEMINI_API_KEY`, and delete `DATABASE_URL`/`POSTGRES_*`/`VISION_*`. The old PostgreSQL data is not carried over; the demo seed recreates the demo person.
 
 ## 6. Open the app on the phone
 `make logs-mobile` shows a QR code. Scan it with Expo Go (Android) or the Camera app (iOS), or type `exp://<LAN_IP>:8081` in Expo Go. Sign in with **demo@example.com / demo1234**.
@@ -56,7 +61,7 @@ Expo Go on Android cannot receive remote push (SDK 53+). In-app alerts still arr
 ## 8. Connect the real pillbox
 In the **main ESP32 sketch**, change only:
 ```cpp
-#define BACKEND_URL "http://192.168.137.1:5000"   // Windows Mobile hotspot address (same on every laptop), port 5000, plain HTTP
+#define BACKEND_URL "http://192.168.137.1:5055"   // Windows Mobile hotspot address (same on every laptop), port 5055, plain HTTP
 ```
 The ESP32-CAM sketch uses the same base URL. Flash both boards. In the app: person → **Pillbox** → pair `pillbox` (the demo seed already pairs it). Within 60 s the pillbox status turns **Online**.
 
@@ -65,12 +70,12 @@ The ESP32-CAM sketch uses the same base URL. Flash both boards. In the app: pers
 |---|---|
 | `make logs` / `make logs-api` | follow the logs |
 | `make sim` | device simulator full-day walk-through |
-| `make test` | backend (pytest, real Postgres) + app (Jest) |
-| `make eval-vision` | scan accuracy/timing report |
-| `make migrate`, `make revision m="…"` | Alembic |
+| `make test` | backend (Vitest + Supertest, real MySQL + Redis) + app (Jest) |
+| `make eval-vision` | scan accuracy/timing report with the real Gemini model |
+| `make migrate`, `make revision m="…"` | Prisma migrations (review the generated SQL, then commit it) |
 | `make seed`, `make reset-seed` | demo data |
-| `make psql`, Adminer at http://localhost:8089 | database (server `db`, user/db from `.env`) |
+| `make mysql`, Adminer at http://localhost:8089 | database (server `db`, user/password from `.env`) |
 | `make down` / `make nuke` | stop / stop and delete the data volumes |
 
 ## 10. Production
-`make prod-up` uses `docker-compose.prod.yml`: no hot reload, no Adminer or Expo, `ENV=prod` (refuses the example JWT secret), and Caddy with automatic HTTPS for `APP_DOMAIN` (open ports 80/443 and point DNS at the server). Caddy only exposes `/api/v1` and `/healthz`. The ESP32s keep using `http://<LAN_IP>:5000` on the LAN; **never forward port 5000 to the internet.** Build the app with `eas build --profile production` and set `EXPO_PUBLIC_API_URL=https://<APP_DOMAIN>`.
+`make prod-up` uses `docker-compose.prod.yml`: no hot reload, no Adminer or Expo, `ENV=prod` (refuses the example JWT secret), and Caddy with automatic HTTPS for `APP_DOMAIN` (open ports 80/443 and point DNS at the server). Caddy only exposes `/api/v1` and `/healthz`. The ESP32s keep using `http://<LAN_IP>:5055` on the LAN; **never forward port 5055 to the internet** (or set `DEVICE_PATH_SECRET`, see docs/deploy-gcp.md). Build the app with `eas build --profile production` and set `EXPO_PUBLIC_API_URL=https://<APP_DOMAIN>`.

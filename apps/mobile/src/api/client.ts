@@ -1,7 +1,7 @@
 import { clearTokens, loadTokens, saveTokens, type Tokens } from '../auth/tokenStore';
 import { ApiError } from '../lib/apiError';
 
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5000').replace(/\/$/, '');
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5055').replace(/\/$/, '');
 
 type Options = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';

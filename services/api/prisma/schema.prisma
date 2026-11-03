@@ -1,0 +1,283 @@
+// MySQL 8.4. Timestamps are UTC. Local (Philippine) wall-clock values live in Date / Time / local_time
+// columns and are never converted by the database. See .claude/skills/database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique @db.VarChar(254)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  name         String   @db.VarChar(80)
+  timezone     String   @default("Asia/Manila") @db.VarChar(64)
+  notifyPrefs  Json     @map("notify_prefs")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+  pushTokens    PushToken[]
+  links         PatientCaregiver[]
+  alerts        Alert[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  jti       String    @id @db.VarChar(32)
+  userId    Int       @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PushToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique @db.VarChar(255)
+  platform  String   @default("unknown") @db.VarChar(16)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
+}
+
+model Device {
+  id             Int       @id @default(autoincrement())
+  deviceId       String    @unique @map("device_id") @db.VarChar(32)
+  cameraId       String    @unique @map("camera_id") @db.VarChar(32)
+  lastSeen       DateTime? @map("last_seen")
+  cameraLastSeen DateTime? @map("camera_last_seen")
+  // {"1": {"lidOpen": true, "at": "<utc iso>"}}
+  slotState      Json      @map("slot_state")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  patients Patient[]
+
+  @@map("devices")
+}
+
+model Patient {
+  id          Int      @id @default(autoincrement())
+  displayName String   @map("display_name") @db.VarChar(60)
+  note        String?  @db.VarChar(200)
+  // The VOICE this person uses. Several people can share one VOICE (its 5 slots are shared).
+  deviceId    Int?     @map("device_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  device     Device?            @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  caregivers PatientCaregiver[]
+  invites    Invite[]
+  medicines  Medicine[]
+  events     DeviceEvent[]
+  intakes    IntakeRecord[]
+  alerts     Alert[]
+  scans      Scan[]
+
+  @@index([deviceId])
+  @@map("patients")
+}
+
+model PatientCaregiver {
+  patientId Int      @map("patient_id")
+  userId    Int      @map("user_id")
+  role      String   @default("member") @db.VarChar(8)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([patientId, userId])
+  @@index([userId])
+  @@map("patient_caregivers")
+}
+
+model Invite {
+  id        Int       @id @default(autoincrement())
+  patientId Int       @map("patient_id")
+  code      String    @unique @db.VarChar(6)
+  createdBy Int?      @map("created_by")
+  expiresAt DateTime  @map("expires_at")
+  usedBy    Int?      @map("used_by")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("invites")
+}
+
+model Medicine {
+  id                Int       @id @default(autoincrement())
+  patientId         Int       @map("patient_id")
+  name              String    @db.VarChar(80)
+  strength          String?   @db.VarChar(30)
+  form              String?   @db.VarChar(20)
+  doseAmount        Int       @default(1) @map("dose_amount") @db.SmallInt
+  doseUnit          String?   @map("dose_unit") @db.VarChar(20)
+  instructions      String?   @db.VarChar(200)
+  // 1-5 or null. Unique per VOICE among active medicines: enforced in medicine_service (MySQL has no partial index).
+  slot              Int?      @db.SmallInt
+  barcode           String?   @db.VarChar(64)
+  expiryDate        DateTime? @map("expiry_date") @db.Date
+  qty               Int       @default(0)
+  lowStockThreshold Int       @default(5) @map("low_stock_threshold")
+  refillLeadDays    Int       @default(3) @map("refill_lead_days")
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  patient    Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  schedules  Schedule[]
+  references ReferenceImage[]
+  intakes    IntakeRecord[]
+
+  @@index([patientId])
+  @@index([barcode])
+  @@map("medicines")
+}
+
+model Schedule {
+  id         Int      @id @default(autoincrement())
+  medicineId Int      @map("medicine_id")
+  // Wall-clock device time (Asia/Manila). Prisma returns it as 1970-01-01THH:MM:SSZ.
+  time       DateTime @db.Time(0)
+  // JSON array, 0 = Monday .. 6 = Sunday
+  daysOfWeek Json     @map("days_of_week")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  medicine Medicine       @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  intakes  IntakeRecord[]
+
+  @@index([medicineId])
+  @@map("schedules")
+}
+
+model ReferenceImage {
+  id         Int      @id @default(autoincrement())
+  medicineId Int      @map("medicine_id")
+  angle      String   @db.VarChar(12)
+  path       String   @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  medicine Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+
+  @@index([medicineId])
+  @@map("reference_images")
+}
+
+/// Raw device events. Idempotent on (device_id, type, dose_id, local_time).
+model DeviceEvent {
+  id         Int      @id @default(autoincrement())
+  deviceId   String   @map("device_id") @db.VarChar(32)
+  patientId  Int      @map("patient_id")
+  type       String   @db.VarChar(20)
+  slot       Int?     @db.SmallInt
+  doseId     Int      @default(0) @map("dose_id")
+  // Philippine wall-clock time exactly as the device sent it (stored as if it were UTC).
+  localTime  DateTime @map("local_time")
+  occurredAt DateTime @map("occurred_at")
+  receivedAt DateTime @default(now()) @map("received_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, type, doseId, localTime], map: "uq_device_events_idem")
+  @@index([patientId])
+  @@index([receivedAt], map: "ix_device_events_received")
+  @@map("device_events")
+}
+
+/// Outcome of one dose (schedule) on one device-local date.
+model IntakeRecord {
+  id            Int       @id @default(autoincrement())
+  patientId     Int       @map("patient_id")
+  medicineId    Int       @map("medicine_id")
+  scheduleId    Int?      @map("schedule_id")
+  doseDate      DateTime  @map("dose_date") @db.Date
+  scheduledTime DateTime  @map("scheduled_time") @db.Time(0)
+  // due | taken | missed | expired
+  status        String    @db.VarChar(8)
+  dueAt         DateTime? @map("due_at")
+  takenAt       DateTime? @map("taken_at")
+  delayMinutes  Int?      @map("delay_minutes")
+  source        String    @default("device") @db.VarChar(8)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  patient  Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  medicine Medicine  @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  schedule Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  @@unique([scheduleId, doseDate], map: "uq_intake_records_schedule_date")
+  @@index([medicineId])
+  @@index([patientId, doseDate], map: "ix_intake_records_patient_date")
+  @@map("intake_records")
+}
+
+model Alert {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  patientId Int?      @map("patient_id")
+  type      String    @db.VarChar(16)
+  severity  String    @default("normal") @db.VarChar(8)
+  title     String    @db.VarChar(120)
+  body      String    @db.VarChar(300)
+  data      Json
+  dedupKey  String    @map("dedup_key") @db.VarChar(120)
+  readAt    DateTime? @map("read_at")
+  pushedAt  DateTime? @map("pushed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patient Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupKey], map: "uq_alerts_user_dedup")
+  @@index([userId, createdAt], map: "ix_alerts_user_created")
+  @@index([patientId])
+  @@map("alerts")
+}
+
+model Scan {
+  id                  Int       @id @default(autoincrement())
+  patientId           Int       @map("patient_id")
+  deviceId            String    @map("device_id") @db.VarChar(32)
+  imagePath           String    @map("image_path") @db.VarChar(255)
+  found               Boolean
+  // "llm" = Gemini picked the medicine id, "ocr" = fuzzy match on the name Gemini read, "none". Names kept for the app.
+  method              String    @db.VarChar(10)
+  // Gemini confidence 0-1
+  score               Float?
+  medicineId          Int?      @map("medicine_id")
+  correctedMedicineId Int?      @map("corrected_medicine_id")
+  correctedAt         DateTime? @map("corrected_at")
+  correctedNone       Boolean   @default(false) @map("corrected_none")
+  result              Json
+  // Expiry date Gemini read from the package. Information only; the answer uses the stored date.
+  readExpiry          String?   @map("read_expiry") @db.VarChar(10)
+  timings             Json
+  durationMs          Int       @map("duration_ms")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, createdAt], map: "ix_scans_patient_created")
+  @@index([createdAt], map: "ix_scans_created")
+  @@map("scans")
+}

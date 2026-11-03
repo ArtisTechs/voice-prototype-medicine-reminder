@@ -17,9 +17,9 @@ import { radius, spacing } from '../../../../theme/tokens';
 
 const METHOD: Record<Scan['method'], string> = {
   barcode: 'by barcode',
-  ocr: 'by the printed name',
+  ocr: 'by the name on the box',
   embed: 'by how the box looks',
-  llm: 'by AI',
+  llm: 'by AI (Gemini)',
   none: '',
 };
 

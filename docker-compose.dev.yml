@@ -1,59 +1,73 @@
-# Dev overrides: hot reload, adminer, Expo dev server, test runner.
+# Dev overrides: hot reload, adminer, Expo dev server, test runner, device simulator.
 x-dev-build: &dev-build
   context: ./services/api
   target: dev
 
+x-api-src: &api-src
+  - ./services/api/src:/srv/src
+  - ./services/api/prisma:/srv/prisma
+  - ./services/api/scripts:/srv/scripts
+  - ./services/api/tests:/srv/tests
+
 services:
   db:
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:3306:3306"
 
   api:
     build: *dev-build
     image: medrem/api:dev
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload", "--reload-dir", "app"]
+    command: ["npx", "tsx", "watch", "--clear-screen=false", "src/server.ts"]
     environment:
       ENABLE_DOCS: "true"
       SEED_DEMO: ${SEED_DEMO:-true}
-      WATCHFILES_FORCE_POLLING: "true"
-    volumes:
-      - ./services/api/app:/srv/app
-      - ./services/api/migrations:/srv/migrations
-      - ./services/api/tests:/srv/tests
-      - ./services/api/scripts:/srv/scripts
+      # Bind mounts from Windows do not send file events into the container.
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    volumes: *api-src
 
   worker:
     build: *dev-build
     image: medrem/api:dev
-    volumes:
-      - ./services/api/app:/srv/app
+    command: ["npx", "tsx", "watch", "--clear-screen=false", "src/worker.ts"]
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    volumes: *api-src
 
+  # make test-api / make test-contract / make eval-vision
   api-test:
     profiles: ["test"]
     build: *dev-build
     image: medrem/api:dev
     entrypoint: []
-    command: ["pytest", "-q"]
+    command: ["npm", "test"]
     env_file: .env
     environment:
       ENV: test
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medrem}:${POSTGRES_PASSWORD:-medrem}@db:5432/medrem_test
+      DATABASE_URL: mysql://${MYSQL_USER:-medrem}:${MYSQL_PASSWORD:-medrem}@db:3306/medrem_test
       REDIS_URL: redis://redis:6379/15
       SCAN_DIR: /tmp/scans
       SEED_DEMO: "false"
       EXPO_PUSH_ENABLED: "false"
-      VISION_LLM_FALLBACK: "false"
-    volumes:
-      - ./services/api/app:/srv/app
-      - ./services/api/migrations:/srv/migrations
-      - ./services/api/tests:/srv/tests
-      - ./services/api/scripts:/srv/scripts
-      - ./services/api/pyproject.toml:/srv/pyproject.toml:ro
-      - ./tools/device-sim:/sim
+      GEMINI_API_KEY: ""
+    volumes: *api-src
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  # make sim: acts like the two ESP32 boards. Node only, no install step.
+  sim:
+    profiles: ["test"]
+    image: node:22.21.1-bookworm-slim
+    working_dir: /sim
+    volumes:
+      - ./tools/device-sim:/sim:ro
+    entrypoint: ["node", "sim.mjs"]
+    depends_on:
+      api:
         condition: service_healthy
 
   mobile:
@@ -62,7 +76,7 @@ services:
     env_file: .env
     environment:
       REACT_NATIVE_PACKAGER_HOSTNAME: ${LAN_IP:?Set LAN_IP in .env to this PC's WiFi IPv4}
-      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://${LAN_IP}:${API_PORT:-5000}}
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://${LAN_IP}:${API_PORT:-5055}}
       EXPO_TUNNEL: ${EXPO_TUNNEL:-false}
       EXPO_CLIENT: ${EXPO_CLIENT:-go}
       CI: "false"

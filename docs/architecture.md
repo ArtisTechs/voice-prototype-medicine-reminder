@@ -10,9 +10,9 @@ flowchart LR
     PHONE["Caregiver phone<br/>Expo app"]
   end
   subgraph PC["PC / server: Docker Compose"]
-    API["api (FastAPI :5000)<br/>device paths + /api/v1 + WebSocket<br/>vision models loaded"]
-    WK["worker<br/>APScheduler jobs + Expo push"]
-    DB[("PostgreSQL 16<br/>+ pgvector")]
+    API["api (Express :5055)<br/>device paths + /api/v1 + WebSocket<br/>scan pipeline"]
+    WK["worker<br/>node-cron jobs + Expo push"]
+    DB[("MySQL 8.4")]
     RD[("Redis<br/>pub/sub, push queue, locks, rate limits")]
     VOL[("scans volume<br/>scan + reference images")]
     EXPO["mobile (Expo dev server :8081)<br/>dev only"]
@@ -29,17 +29,18 @@ flowchart LR
   WK --> DB
   WK --> RD
   RD -- "patient:* channels" --> API
+  API -- "scan photo + medicine list (HTTPS)" --> GEMINI["Google Gemini API<br/>free tier"]
   WK -- "push" --> EXPOPUSH["Expo push service"]
   EXPOPUSH --> PHONE
 ```
 
-- **One FastAPI app** serves the frozen ESP32 contract (`/api/schedule`, `/api/scan`, `/api/events`) and the caregiver API (`/api/v1/...`) on port 5000 (D2).
-- **The worker** is the same image with `python -m app.worker`. It runs timed rules and sends Expo push from the Redis queue `push:queue` (D7).
+- **One Express app** serves the frozen ESP32 contract (`/api/schedule`, `/api/scan`, `/api/events`) and the caregiver API (`/api/v1/...`) on port 5055 (D2, D23).
+- **The worker** is the same image with `node dist/src/worker.js`. It runs timed rules and sends Expo push from the Redis queue `push:queue` (D7).
 - **Realtime:** services publish small hints (`{type, patientId}`) to Redis after each commit. The `/api/v1/ws` hub forwards them to each caregiver's sockets, and the app refetches the matching queries.
 
 ## Code layout and layering
 
-See `.claude/skills/architecture/SKILL.md`. Backend: `api → services → repositories → models`; `core` is used by all; `jobs` and `api` are the only entry points into services. App: `src/app` routes → `src/features` → `src/api` hooks → `src/lib`. `src/components` is the design system.
+See `.claude/skills/architecture/SKILL.md`. Backend: `routes → services → repositories → Prisma`; `core` is used by all; `jobs` and `routes` are the only entry points into services. App: `src/app` routes → `src/features` → `src/api` hooks → `src/lib`. `src/components` is the design system.
 
 ## Main flows
 
@@ -59,7 +60,7 @@ sequenceDiagram
   PB->>API: POST /api/events {type: due}
   API->>DB: intake_record(status=due, due_at)
   PB->>API: POST /api/events {type: taken}
-  API->>DB: status=taken, delay, qty -= dose (row lock)
+  API->>DB: status=taken (conditional update), delay, qty = max(qty - dose, 0)
   API->>R: PUBLISH patient:1 intake.updated
   R-->>App: WebSocket hint → refetch Today
 ```
@@ -68,7 +69,7 @@ sequenceDiagram
 
 ### Scan
 
-`POST /api/scan` checks the size, type, and device; saves the JPEG; then runs the pipeline with an 8.5 s budget: **barcode → OCR → CLIP embedding (pgvector) → optional Claude**. It stops at the first confident match. The answer is `{found:false}` or the medicine with `low`/`expired` flags. An unknown scan raises a `scan_unknown` alert. A caregiver correction adds the photo as a new reference image. Details: `.claude/skills/medicine-vision/SKILL.md`.
+`POST /api/scan` checks the device, type and size (2 MB); saves the JPEG; then asks **Gemini** (one call, 8 s abort) which of this box's registered medicines is on the package, with a JSON-only answer `{medicineId|null, readName, readStrength, readExpiry, confidence}`. **Code** decides: the id must belong to this box and the confidence must be at least 0.7 (otherwise a fuzzy match on the name it read). The answer to the camera is read from MySQL, never from the model. Any failure answers `{"found":false}` inside the 10 s limit. An unknown scan raises a `scan_unknown` alert. A caregiver correction adds the photo as a new reference photo. Details: `.claude/skills/medicine-vision/SKILL.md`.
 
 ## Data model
 
@@ -76,10 +77,10 @@ sequenceDiagram
 erDiagram
   users ||--o{ patient_caregivers : "looks after"
   patients ||--o{ patient_caregivers : ""
-  patients ||--o| devices : "pillbox + camera"
+  devices ||--o{ patients : "one VOICE, several people"
   patients ||--o{ medicines : ""
   medicines ||--o{ schedules : "dose times (id = device dose id)"
-  medicines ||--o{ reference_images : "embedding vector(512)"
+  medicines ||--o{ reference_images : "photos of the package"
   patients ||--o{ intake_records : "one per schedule per day"
   patients ||--o{ device_events : "raw, idempotent"
   patients ||--o{ scans : "30-day retention"
@@ -89,12 +90,12 @@ erDiagram
   patients ||--o{ invites : "6-char codes"
 ```
 
-Key constraints: `device_events (device_id, type, dose_id, local_time)` unique (idempotency), `intake_records (schedule_id, dose_date)` unique, `alerts (user_id, dedup_key)` unique, `medicines (patient_id, slot)` unique where active, and an HNSW cosine index on `reference_images.embedding`.
+Key constraints: `device_events (device_id, type, dose_id, local_time)` unique (idempotency), `intake_records (schedule_id, dose_date)` unique, `alerts (user_id, dedup_key)` unique. "One active medicine per slot per VOICE" is checked in the services (MySQL has no partial indexes, D24).
 
 ## Time
 
-All instants are UTC `timestamptz`. Schedule times are wall-clock `time` in `DEVICE_TZ` (Asia/Manila), because the firmware clock is fixed at UTC+8. Device event times arrive naive and are stored both as `local_time` and as UTC `occurred_at` (D5).
+All instants are UTC `DateTime`s. Schedule times are wall-clock `TIME` in `DEVICE_TZ` (Asia/Manila), because the firmware clock is fixed at UTC+8. Device event times arrive naive and are stored both as `local_time` and as UTC `occurred_at` (D5).
 
 ## Security model (summary)
 
-Caregivers use JWT access tokens (15 min) and rotating refresh tokens (30 days, with reuse detection); passwords are hashed with argon2id. Devices have no auth (the firmware is fixed). They are accepted only when paired, are rate-limited, and only see their own patient's data. Port 5000 must stay on the LAN; prod exposes only `/api/v1` and `/healthz` through Caddy. Details: `.claude/skills/security-privacy/SKILL.md`.
+Caregivers use JWT access tokens (15 min) and rotating refresh tokens (30 days, with reuse detection); passwords are hashed with argon2id. Devices have no auth (the firmware is fixed). They are accepted only when paired, are rate-limited, and only see their own patient's data. Port 5055 must stay on the LAN (or behind `DEVICE_PATH_SECRET`); prod exposes only `/api/v1` and `/healthz` through Caddy. Details: `.claude/skills/security-privacy/SKILL.md`.

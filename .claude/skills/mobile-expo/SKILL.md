@@ -22,7 +22,7 @@ Routes stay thin. SDK 58 router: no `initialRouteName` (use `unstable_settings =
 Routes stay thin. They compose `src/features/<area>/*` components.
 
 ## API client (`src/api/client.ts`)
-- The base URL is `process.env.EXPO_PUBLIC_API_URL` (e.g. `http://192.168.1.20:5000`). All paths are `/api/v1/...`.
+- The base URL is `process.env.EXPO_PUBLIC_API_URL` (e.g. `http://192.168.1.20:5055`). All paths are `/api/v1/...`.
 - `api<T>(path, {method, body, query})` adds `Authorization: Bearer <access>`. On a 401 it calls `/auth/refresh` **once** (single-flight promise), retries, and if that fails it signs out.
 - Errors become `ApiError {status, code, message}` from the backend's `{"error":{...}}`. A network failure becomes `code: "network"`.
 - Uploads (photos) use `FormData` with `{uri, name, type}`.

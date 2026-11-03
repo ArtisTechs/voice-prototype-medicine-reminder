@@ -4,7 +4,7 @@
   - First run: creates .env from .env.example with random secrets.
   - Every run: detects this laptop's IP for the phone app, writes LAN_IP into .env,
     starts the Docker stack and prints the addresses to use.
-  - VOICE (ESP32) always uses the Windows Mobile hotspot address http://192.168.137.1:5000,
+  - VOICE (ESP32) always uses the Windows Mobile hotspot address http://192.168.137.1:5055,
     which is the same on every Windows laptop, so the firmware is flashed once.
 
   Usage (from the repo root):  .\start-voice.cmd            phone app reaches the laptop over the phone hotspot
@@ -34,9 +34,23 @@ function Set-EnvValue([string]$text, [string]$key, [string]$value) {
 if (-not (Test-Path $envFile)) {
   $t = [IO.File]::ReadAllText((Join-Path $root '.env.example'))
   $t = Set-EnvValue $t 'JWT_SECRET' (New-Secret 32)
-  $t = Set-EnvValue $t 'POSTGRES_PASSWORD' (New-Secret 16)
+  $t = Set-EnvValue $t 'MYSQL_PASSWORD' (New-Secret 16)
+  $t = Set-EnvValue $t 'MYSQL_ROOT_PASSWORD' (New-Secret 16)
   [IO.File]::WriteAllText($envFile, $t, $utf8)
   Write-Host 'Created .env with new secrets.'
+}
+
+# 1b. An .env from the PostgreSQL version: add the MySQL values, drop the old database URL
+if ((Test-Path $envFile) -and ([IO.File]::ReadAllText($envFile) -notmatch '(?m)^MYSQL_PASSWORD=')) {
+  $t = [IO.File]::ReadAllText($envFile)
+  $t = [regex]::Replace($t, '(?m)^(DATABASE_URL|POSTGRES_\w+|VISION_\w+|ANTHROPIC_API_KEY)=.*\r?\n', '')
+  $t = Set-EnvValue $t 'MYSQL_DATABASE' 'medrem'
+  $t = Set-EnvValue $t 'MYSQL_USER' 'medrem'
+  $t = Set-EnvValue $t 'MYSQL_PASSWORD' (New-Secret 16)
+  $t = Set-EnvValue $t 'MYSQL_ROOT_PASSWORD' (New-Secret 16)
+  $t = Set-EnvValue $t 'GEMINI_MODEL' 'gemini-2.5-flash'
+  [IO.File]::WriteAllText($envFile, $t, $utf8)
+  Write-Host 'Updated .env for MySQL. Add GEMINI_API_KEY (https://aistudio.google.com/apikey) to enable package scans.' -ForegroundColor Yellow
 }
 
 # 2. Addresses: the laptop's own hotspot, and its IP on the network that gives it internet
@@ -55,7 +69,7 @@ if ($Hotspot -or -not $uplink) {
 $t = [IO.File]::ReadAllText($envFile)
 $t = Set-EnvValue $t 'LAN_IP' $appIp
 [IO.File]::WriteAllText($envFile, $t, $utf8)
-$port = if ($t -match '(?m)^API_PORT=(\d+)') { $Matches[1] } else { '5000' }
+$port = if ($t -match '(?m)^API_PORT=(\d+)') { $Matches[1] } else { '5055' }
 
 # 3. Start the stack
 docker info *> $null
@@ -79,7 +93,7 @@ if ($hotspotOn) {
 } else {
   Write-Host "VOICE device URL:     http://${hotspotIp}:$port   - turn on Windows Mobile hotspot so VOICE can connect" -ForegroundColor Yellow
 }
-if ($port -ne '5000') { Write-Host "Note: API_PORT=$port in .env. The VOICE device firmware needs 5000." -ForegroundColor Yellow }
+if ($port -ne '5055') { Write-Host "Note: API_PORT=$port in .env. The VOICE device firmware needs 5055." -ForegroundColor Yellow }
 $rules = Get-NetFirewallRule -DisplayName 'VOICE*' -ErrorAction SilentlyContinue
 if (-not $rules) { Write-Host 'Firewall not opened yet: run setup-voice.cmd once (it asks for admin).' -ForegroundColor Yellow }
 Write-Host 'Sign in: demo@example.com / demo1234     QR code: docker compose logs -f mobile'
