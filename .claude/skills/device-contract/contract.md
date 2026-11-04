@@ -37,7 +37,8 @@ Request: body = raw JPEG bytes, `Content-Type: image/jpeg`, `X-Device: pillbox-c
 { "found": true, "name": "Losartan 50mg", "dose": "1 tablet", "instructions": "After breakfast",
   "expiry": "2027-06-30", "slot": 1, "qty": 24, "low": false, "expired": false }
 ```
-200 not found: `{ "found": false }` (exactly this, no other keys).
+200 not found: `{ "found": false }` when nothing could be read.
+200 not found, with a suggestion (additive, optional; firmware that ignores unknown keys is unaffected): `{ "found": false, "guess": "Biogesic 500mg", "guessed": false }`. `guess` is the name the AI read or recognised (max 31 chars); `guessed` is `true` when it could not read the name and is going by how the package looks, so the box should say "Looks like ... (not sure)". It is only sent when `found` is false and is never a registered medicine.
 
 Limits: name 31, dose 19, instructions 63, expiry 10. `slot` = assigned slot or 0. `low` = `qty <= low_stock_threshold`. `expired` = `expiry_date < today(PH)`. `expiry` = `""` if unknown.
 

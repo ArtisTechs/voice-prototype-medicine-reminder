@@ -150,6 +150,7 @@ The Python image ran as uid 10001. The Node image creates the same user, so an e
 
 ## D28. Add a medicine by scanning it on the VOICE (2026-11-05)
 - **Choice:** the add-medicine screen can fill itself from the box's camera. The app calls `POST /patients/:id/scans/learn`, the next scan from that VOICE is read by Gemini even when nothing is registered yet, and the newest scan carries `readName`, `readStrength` and the expiry. The phone barcode scan stays as the other way.
-- **Why not always read:** an empty box normally costs no Gemini call (free-tier quota); the flag keeps it that way unless someone is waiting.
+- **Reading boxes with no medicines:** every scan now asks the AI (rate limited by `GEMINI_MAX_PER_MINUTE`), so an empty box can still suggest a name. The flag only decides who gets the scan and that no unknown-package alert is raised.
 - **Firmware:** unchanged: the box sends the usual `POST /api/scan` and gets `{"found":false}`.
 - **Guessing from looks (2026-11-05):** the AI reads printed text first; when it cannot, it may suggest a product from the packaging, marked `guessed`. A box answer on a registered medicine needs 0.9 confidence for such a guess (0.7 for printed text), and a guessed name is only ever shown to the caregiver to confirm. The phone can send a photo of a box too (`POST /patients/:id/medicines/read-package`); that photo is not stored. Switch off with `SCAN_GUESS_FROM_LOOKS=false`.
+- **Suggestion on the box (2026-11-05):** an unregistered package gets `{"found":false,"guess":"<name strength>","guessed":<true if from looks>}`. Exactly `{"found":false}` when nothing was read. Additive: the three device paths and every other field are unchanged.

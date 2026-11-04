@@ -21,7 +21,7 @@ describe('scan to add a medicine', () => {
     expect((await api().post(`/api/v1/patients/${patient.id}/scans/learn`).set(auth(user))).status).toBe(204);
     const r = await scan(await jpeg());
     expect(r.status).toBe(200);
-    expect(r.body).toEqual({ found: false });
+    expect(r.body).toEqual({ found: false, guess: 'Biogesic 500mg', guessed: false });
     expect(fake.calls).toBe(1);
 
     const list = await api().get(`/api/v1/patients/${patient.id}/scans`).set(auth(user));
@@ -36,15 +36,17 @@ describe('scan to add a medicine', () => {
     fake.respond = () => ({ ...nothing(), readName: 'Biogesic' });
     await api().post(`/api/v1/patients/${patient.id}/scans/learn`).set(auth(user));
     await scan(await jpeg());
+    expect(await prisma.alert.count({ where: { type: 'scan_unknown' } })).toBe(0);
     await scan(await jpeg(1));
-    expect(fake.calls).toBe(1); // the second press is an ordinary scan on an empty box: Gemini is not used
+    // The second press is an ordinary scan again: the unknown-package alert is back.
+    expect(await prisma.alert.count({ where: { type: 'scan_unknown' } })).toBe(1);
   });
 
-  it('does not call Gemini for an empty box when the app is not waiting', async () => {
+  it('an empty box with nothing readable answers exactly {"found":false}', async () => {
     await emptyBox();
     const fake = await visionClient();
     expect((await scan(await jpeg())).body).toEqual({ found: false });
-    expect(fake.calls).toBe(0);
+    expect(fake.calls).toBe(1);
   });
 
   it('is only for people looking after that person', async () => {

@@ -63,7 +63,6 @@ export async function identify(image: Buffer, candidates: Candidate[], opts: Ide
     return result;
   };
 
-  if (!candidates.length && !opts.learn) return { ...done(), reason: 'no_candidates' };
   if (!(await withinQuota())) {
     log.warn('scan_local_rate_limit');
     return { ...done(), reason: 'local_rate_limit' };

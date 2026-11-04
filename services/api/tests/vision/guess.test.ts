@@ -62,4 +62,26 @@ describe('guessing from the look of the package', () => {
       settings().SCAN_GUESS_FROM_LOOKS = true;
     }
   });
+
+  it('the box gets a suggestion when the package is not registered: printed name, or a labelled guess from the look', async () => {
+    await setup();
+    const fake = await visionClient();
+    fake.respond = () => ({ ...nothing(), readName: 'Biogesic', readStrength: '500mg', confidence: 0.9, source: 'printed' });
+    expect((await scan(await jpeg())).body).toEqual({ found: false, guess: 'Biogesic 500mg', guessed: false });
+    fake.respond = () => ({ ...nothing(), readName: 'Biogesic', confidence: 0.6, source: 'appearance' });
+    expect((await scan(await jpeg())).body).toEqual({ found: false, guess: 'Biogesic', guessed: true });
+  });
+
+  it('keeps the suggestion inside the camera limit (31) and never adds it to a found answer', async () => {
+    const s = await setup();
+    const fake = await visionClient();
+    fake.respond = () => ({ ...nothing(), readName: 'A very long invented brand name that overflows', readStrength: '500mg', confidence: 0.9 });
+    const r = await scan(await jpeg());
+    expect(r.body.found).toBe(false);
+    expect(r.body.guess.length).toBeLessThanOrEqual(31);
+    fake.respond = () => sees(s.meds.losartan.id, 0.95, { readName: 'Something else', source: 'printed' });
+    const hit = (await scan(await jpeg())).body;
+    expect(hit.found).toBe(true);
+    expect(hit.guess).toBeUndefined();
+  });
 });

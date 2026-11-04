@@ -12,7 +12,7 @@ The interactive OpenAPI docs are at `http://localhost:5055/docs` (dev only, `ENA
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/schedule?device=pillbox` | `{doses:[{id,slot,name,dose,time,instructions,expiry,qty}]}`, at most 20, heartbeat |
-| POST | `/api/scan` | raw JPEG, `X-Device: pillbox-cam` → full result or `{"found": false}`, answered in under 10 s |
+| POST | `/api/scan` | raw JPEG, `X-Device: pillbox-cam` → full result, or `{"found": false}` (with `guess` and `guessed` when the AI read or recognised a name that is not a registered medicine), answered in under 10 s |
 | POST | `/api/events` | `{device,type,slot,doseId,time}` → `{"ok":true}` (`"duplicate":true` on a resend) |
 
 Errors: 403 `device_not_registered`, 413, 415, 422, 429 `rate_limited` (schedule 30/min, events 120/min, scan 6/min per device).

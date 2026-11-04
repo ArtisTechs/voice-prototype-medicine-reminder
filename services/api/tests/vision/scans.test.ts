@@ -65,10 +65,11 @@ describe('pipeline rules', () => {
     expect(low).toMatchObject({ medicineId: null, reason: 'low_confidence' });
   });
 
-  it('returns no match and a reason when there is nothing registered', async () => {
+  it('still reads the box when nothing is registered yet, but matches nothing', async () => {
     const fake = await visionClient();
-    expect(await identify(await jpeg(), [])).toMatchObject({ medicineId: null, reason: 'no_candidates' });
-    expect(fake.calls).toBe(0);
+    fake.respond = () => ({ ...nothing(), readName: 'Biogesic', confidence: 0.9, source: 'printed' });
+    expect(await identify(await jpeg(), [])).toMatchObject({ medicineId: null, readName: 'Biogesic', reason: 'no_match' });
+    expect(fake.calls).toBe(1);
   });
 
   it('gives up at the budget even if the client ignores the abort signal', async () => {

@@ -23,6 +23,9 @@ Identify which of **this box's registered medicines** is in a 1024x768 JPEG of t
 ## Reading first, a labelled guess second
 The prompt asks Gemini to read the printed text first (`source: "printed"`). Only when the name is unreadable may it recognise a well-known product by packaging (`source: "appearance"`), never above 0.9 confidence and never inventing a name. In code (`pipeline.ts`): a registered medicine matched by look needs `SCAN_MIN_CONFIDENCE_LOOKS` (0.9) instead of 0.7; a guessed name is never fuzzy-matched; `SCAN_GUESS_FROM_LOOKS=false` ignores guesses entirely. The scan row keeps `guessed`, and the app shows guesses as guesses ("check it carefully"). The same reader serves `POST /patients/:id/medicines/read-package` (phone photo, not stored).
 
+## Suggestion for the box
+A scan that matches nothing registered but where the AI read a name answers `{"found":false,"guess":"<name strength, max 31>","guessed":<bool>}` (`guessed` = from looks only). Every scan asks the AI, including boxes with no medicines yet. Nothing read = exactly `{"found":false}`.
+
 ## Budget and limits
 - `AbortController` aborts the Gemini call at `GEMINI_TIMEOUT_MS` (8000), never later than the budget; a backstop `Promise.race` against `SCAN_BUDGET_SECONDS` (9) covers a client that ignores the signal. The route's total stays under 10 s.
 - **One scan at a time per box:** a Redis lock `scan:<device pk>` (15 s TTL). A second press meanwhile is answered `found:false` without calling Gemini (`reason=busy`).

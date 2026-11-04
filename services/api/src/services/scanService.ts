@@ -110,7 +110,14 @@ export async function scan(deviceIdent: string | undefined, data: Buffer | undef
   });
 
   const med = meds.find((m) => m.id === match.medicineId);
-  const answer: Record<string, unknown> = med ? { ...scanAnswer(med) } : { found: false };
+  // Not a registered medicine, but the AI read (or recognised) a name: offer it as a suggestion. Exactly {"found":false}
+  // when nothing was read. Old firmware ignores the extra keys.
+  const suggestion = !med && match.readName ? [match.readName, match.readStrength].filter(Boolean).join(' ') : '';
+  const answer: Record<string, unknown> = med
+    ? { ...scanAnswer(med) }
+    : suggestion
+      ? { found: false, guess: fit(suggestion, SCAN_LIMITS.name), guessed: !!match.guessed }
+      : { found: false };
   const ownerId = med ? med.patientId : learning ?? pids[0];
   if (learning !== null) await redis().del(learnKey(learning)).catch(() => undefined);
 
