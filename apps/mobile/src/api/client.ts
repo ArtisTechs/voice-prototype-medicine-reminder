@@ -1,7 +1,9 @@
 import { clearTokens, loadTokens, saveTokens, type Tokens } from '../auth/tokenStore';
 import { ApiError } from '../lib/apiError';
 
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5055').replace(/\/$/, '');
+// A release build without EXPO_PUBLIC_API_URL still talks to the hosted server; only dev builds fall back to localhost.
+const HOSTED_API_URL = 'https://voice-prototype-medicine-reminder.onrender.com';
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? (__DEV__ ? 'http://localhost:5055' : HOSTED_API_URL)).replace(/\/$/, '');
 
 type Options = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -70,7 +72,7 @@ async function send(path: string, opts: Options, token?: string): Promise<Respon
   if (opts.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? 20000);
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? 60000);
   try {
     return await fetch(buildUrl(path, opts.query), {
       method: opts.method ?? 'GET',
@@ -79,17 +81,36 @@ async function send(path: string, opts: Options, token?: string): Promise<Respon
       signal: controller.signal,
     });
   } catch {
-    throw new ApiError(0, 'network', "We couldn't reach the server.");
+    throw new ApiError(0, 'network', "We couldn't reach the server. Check your internet, then try again. It can take a minute to wake up.");
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Free hosting puts the server to sleep when idle and the first request then takes up to a minute.
+ * Call this when the app opens so it is awake by the time someone has typed their password.
+ */
+export function wakeServer(): void {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 90000);
+  fetch(`${API_URL}/healthz`, { signal: controller.signal })
+    .catch(() => undefined)
+    .finally(() => clearTimeout(timer));
 }
 
 /** Typed call to /api/v1. Adds the bearer token, refreshes once on 401, maps errors to ApiError. */
 export async function api<T>(path: string, opts: Options = {}): Promise<T> {
   const useAuth = opts.auth !== false;
   const tokens = useAuth ? await loadTokens() : null;
-  let res = await send(path, opts, tokens?.accessToken);
+  let res: Response;
+  try {
+    res = await send(path, opts, tokens?.accessToken);
+  } catch (e) {
+    // One quiet retry for reads: the first request after a long idle often fails while the server wakes up.
+    if (!(e instanceof ApiError && e.code === 'network') || (opts.method ?? 'GET') !== 'GET') throw e;
+    res = await send(path, opts, tokens?.accessToken);
+  }
   if (res.status === 401 && useAuth && tokens) {
     const next = await refreshTokens();
     if (!next) {

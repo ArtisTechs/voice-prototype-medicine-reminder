@@ -32,8 +32,8 @@ Caregivers, often family members who are not technical, and some of them older. 
 - **Type scale (pt, lineHeight):** `caption 14/20` (metadata only), `body 17/24`, `bodyStrong 17/24 600`, `title 20/28 600`, `headline 24/32 700`, `display 32/40 700`.
 - **Radius:** `sm 10, md 14, lg 20, xl 28, pill`. Buttons, chips and badges are pills; cards use `lg`.
 - **Elevation:** `<Card>` has a soft shadow in light mode and a 1 px border in dark mode (shadows vanish on dark). `tone="tinted"` (primarySoft) highlights one thing per screen, such as "Next dose".
-- **Neutral colors:** `bg, surface, surfaceAlt, border, text, textMuted, primary, primarySoft, onPrimary, accent, accentSoft, danger, focus, shadow` (light + dark in `tokens.ts`). Primary = `#2E4FD8` light / `#9FB2FF` dark. Every pair is checked by `__tests__/contrast.test.ts`.
-- **Brand:** the app and the device are both **VOICE**. `<Brand>` (sign-in/sign-up) shows the app icon. Icons are drawn by `tools/icons/make_icons.py` (speech bubble + capsule on primary blue); re-run it to change them.
+- **Neutral colors:** `bg, surface, surfaceAlt, border, text, textMuted, primary, primarySoft, onPrimary, accent, accentSoft, danger, focus, shadow` (light + dark in `tokens.ts`). Primary = `#02547A` light / `#8FD3F4` dark (the logo blue). Every pair is checked by `__tests__/contrast.test.ts`.
+- **Brand:** the app and the device are both **VOICE**. `<Brand>` (sign-in/sign-up) shows the app icon. Every icon and the splash are generated from the logo in `tools/icons/logo-source.png` by `node tools/icons/make_icons.mjs`; replace that file and re-run to change them.
 - **Decor:** `IconCircle` (icon on a soft tinted square, decorative), `Avatar` (initials), `SectionHeader`. Home leads with a greeting; patient screens lead with "Next up", then doses grouped Morning / Afternoon / Evening.
 - **Themes:** follow the system (`useColorScheme`), with an override in Settings (System/Light/Dark).
 

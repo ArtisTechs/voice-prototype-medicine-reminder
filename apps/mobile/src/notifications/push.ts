@@ -12,7 +12,8 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
     shouldSetBadge: false,
-    shouldShowBanner: true,
+    // In the app, the custom in-app banner (NotificationsBridge) shows alerts; the system banner only appears when the app is closed.
+    shouldShowBanner: false,
     shouldShowList: true,
   }),
 });

@@ -13,7 +13,8 @@ import * as referenceService from '../src/services/referenceService';
 const log = getLogger('seed');
 
 export const DEMO_EMAIL = 'demo@example.com';
-export const DEMO_PASSWORD = 'demo1234';
+// SEED_PASSWORD lets a hosted database get its own demo password.
+export const DEMO_PASSWORD = process.env.SEED_PASSWORD || 'demo1234';
 
 export function ean13(body12: string): string {
   const total = [...body12].reduce((sum, d, i) => sum + Number(d) * (i % 2 ? 3 : 1), 0);

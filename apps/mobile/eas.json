@@ -9,13 +9,19 @@
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://voice-prototype-medicine-reminder.onrender.com" }
     },
     "server": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": { "EXPO_PUBLIC_API_URL": "https://voice-prototype-medicine-reminder.onrender.com" }
     },
-    "production": {}
-  }
+    "production": {
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://voice-prototype-medicine-reminder.onrender.com" }
+    }
+  },
+  "submit": { "production": {} }
 }

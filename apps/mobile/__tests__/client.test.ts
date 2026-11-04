@@ -48,7 +48,20 @@ describe('api client', () => {
     await expect(api('/api/v1/x', { method: 'POST', body: {} })).rejects.toEqual(
       new ApiError(409, 'slot_taken', 'Slot 2 already has a medicine.'),
     );
-    fetchMock.mockImplementationOnce(() => Promise.reject(new TypeError('Network request failed')));
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Network request failed')));
     await expect(api('/api/v1/x')).rejects.toMatchObject({ code: 'network' });
+  });
+
+  it('retries a read once when the server is still waking up, but never a write', async () => {
+    fetchMock
+      .mockImplementationOnce(() => Promise.reject(new TypeError('Network request failed')))
+      .mockImplementationOnce(() => json(200, { ok: true }));
+    await expect(api('/api/v1/x')).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Network request failed')));
+    await expect(api('/api/v1/x', { method: 'POST', body: {} })).rejects.toMatchObject({ code: 'network' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
