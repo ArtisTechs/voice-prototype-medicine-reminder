@@ -62,7 +62,10 @@ export function PhotoReadSheet({
         else if (r.reason === 'no_key') setProblem('Reading boxes is not switched on for this server yet.');
         else setProblem("We couldn't read that box. Hold the side with the name printed on it, in good light, and try again.");
       } catch (e) {
-        if (!cancelled) setProblem(errorMessage(e));
+        if (!cancelled) {
+          const why = e instanceof ApiError && typeof e.details === 'string' ? ` (${e.details})` : '';
+          setProblem(errorMessage(e) + why);
+        }
       }
     })();
     return () => {

@@ -80,8 +80,9 @@ async function send(path: string, opts: Options, token?: string): Promise<Respon
       body: opts.body === undefined ? undefined : isForm ? (opts.body as FormData) : JSON.stringify(opts.body),
       signal: controller.signal,
     });
-  } catch {
-    throw new ApiError(0, 'network', "We couldn't reach the server. Check your internet, then try again. It can take a minute to wake up.");
+  } catch (e) {
+    const why = controller.signal.aborted ? 'timed out' : e instanceof Error ? e.message : String(e);
+    throw new ApiError(0, 'network', "We couldn't reach the server. Check your internet, then try again. It can take a minute to wake up.", why);
   } finally {
     clearTimeout(timer);
   }

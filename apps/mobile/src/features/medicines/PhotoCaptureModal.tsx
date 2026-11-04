@@ -27,18 +27,22 @@ export function PhotoCaptureModal({ visible, angle, onClose, onCaptured, title, 
   const { permission, request: requestPermission } = useCameraAccess();
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
   const camera = useRef<CameraView>(null);
   const { colors } = useTheme();
 
   const shoot = async () => {
     if (!camera.current) return;
     setBusy(true);
+    setFailed(false);
     try {
-      const photo = await camera.current.takePictureAsync({ quality: 0.8 });
+      const photo = await camera.current.takePictureAsync({ quality: 0.8, skipProcessing: true });
       if (!photo) return;
       const rendered = await ImageManipulator.manipulate(photo.uri).resize({ width: 1280 }).renderAsync();
       const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });
       onCaptured(saved.uri);
+    } catch {
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -56,6 +60,7 @@ export function PhotoCaptureModal({ visible, angle, onClose, onCaptured, title, 
         ) : visible ? (
           <CameraView ref={camera} style={styles.flex} facing="back" onCameraReady={() => setReady(true)} />
         ) : null}
+        {failed ? <AppText style={styles.header} accessibilityLiveRegion="polite">The photo didn't work. Try once more.</AppText> : null}
         <View style={styles.footer}>
           <Button title="Take photo" icon="camera" onPress={shoot} loading={busy} disabled={!ready} />
           <Button title="Cancel" variant="secondary" onPress={onClose} />
