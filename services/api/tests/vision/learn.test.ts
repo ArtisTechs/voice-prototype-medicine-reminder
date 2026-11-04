@@ -13,7 +13,7 @@ async function emptyBox() {
 }
 
 describe('scan to add a medicine', () => {
-  it('reads the package of an empty box once the app is waiting, and keeps the box answer {"found":false}', async () => {
+  it('reads the package of an empty box once the app is waiting, and the box answer is only the suggestion', async () => {
     const { user, patient } = await emptyBox();
     const fake = await visionClient();
     fake.respond = () => ({ ...nothing(), readName: 'Biogesic', readStrength: '500mg', readExpiry: '2027-05-31' });
@@ -21,7 +21,7 @@ describe('scan to add a medicine', () => {
     expect((await api().post(`/api/v1/patients/${patient.id}/scans/learn`).set(auth(user))).status).toBe(204);
     const r = await scan(await jpeg());
     expect(r.status).toBe(200);
-    expect(r.body).toEqual({ found: false, guess: 'Biogesic 500mg', guessed: false });
+    expect(r.body).toEqual({ found: false, guess: 'Biogesic 500mg', guessed: false, expiry: '2027-05-31', expired: false });
     expect(fake.calls).toBe(1);
 
     const list = await api().get(`/api/v1/patients/${patient.id}/scans`).set(auth(user));

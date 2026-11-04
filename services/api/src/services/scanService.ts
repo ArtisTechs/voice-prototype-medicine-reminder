@@ -116,7 +116,13 @@ export async function scan(deviceIdent: string | undefined, data: Buffer | undef
   const answer: Record<string, unknown> = med
     ? { ...scanAnswer(med) }
     : suggestion
-      ? { found: false, guess: fit(suggestion, SCAN_LIMITS.name), guessed: !!match.guessed }
+      ? {
+          found: false,
+          guess: fit(suggestion, SCAN_LIMITS.name),
+          guessed: !!match.guessed,
+          // Printed expiry date, only when the AI read one: lets the box warn about an expired package that is not registered.
+          ...(match.readExpiry ? { expiry: match.readExpiry, expired: match.readExpiry < new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10) } : {}),
+        }
       : { found: false };
   const ownerId = med ? med.patientId : learning ?? pids[0];
   if (learning !== null) await redis().del(learnKey(learning)).catch(() => undefined);

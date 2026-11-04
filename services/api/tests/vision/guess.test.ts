@@ -72,6 +72,13 @@ describe('guessing from the look of the package', () => {
     expect((await scan(await jpeg())).body).toEqual({ found: false, guess: 'Biogesic', guessed: true });
   });
 
+  it('also gives the printed expiry of a package that is not registered', async () => {
+    await setup();
+    const fake = await visionClient();
+    fake.respond = () => ({ ...nothing(), readName: 'Biogesic', readStrength: '500mg', readExpiry: '2020-01-31', confidence: 0.9, source: 'printed' });
+    expect((await scan(await jpeg())).body).toEqual({ found: false, guess: 'Biogesic 500mg', guessed: false, expiry: '2020-01-31', expired: true });
+  });
+
   it('keeps the suggestion inside the camera limit (31) and never adds it to a found answer', async () => {
     const s = await setup();
     const fake = await visionClient();
