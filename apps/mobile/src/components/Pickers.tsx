@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useMemo, useState } from 'react';
+import WheelPicker from '@quidone/react-native-wheel-picker';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { DAY_NAMES, isoDay } from '../lib/format';
@@ -10,27 +11,6 @@ import { Button } from './Button';
 import { Sheet } from './Sheet';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-function Chip({ label, selected, disabled, onPress, a11y, flexBasis = '23%' }: { label: string; selected: boolean; disabled?: boolean; onPress: () => void; a11y?: string; flexBasis?: `${number}%` }) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={a11y ?? label}
-      accessibilityState={{ selected, disabled: !!disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={[
-        styles.chip,
-        { flexBasis, borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primary : colors.surface, opacity: disabled ? 0.4 : 1 },
-      ]}
-    >
-      <AppText variant="bodyStrong" color={selected ? colors.onPrimary : colors.text}>
-        {label}
-      </AppText>
-    </Pressable>
-  );
-}
 
 function ArrowButton({ icon, label, onPress, disabled }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; disabled?: boolean }) {
   const { colors } = useTheme();
@@ -150,49 +130,60 @@ export function DatePickerSheet({
   );
 }
 
-const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+const HOUR_ITEMS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
+const MINUTE_ITEMS = Array.from({ length: 60 }, (_, i) => ({ value: i, label: String(i).padStart(2, '0') }));
+const AMPM_ITEMS = [
+  { value: 'AM', label: 'AM' },
+  { value: 'PM', label: 'PM' },
+];
 
-/** Hour / minute / AM-PM chips in a bottom sheet. value / onPick use "HH:MM" (24 h). */
+/** Scrolling wheels for hour, minute (every minute) and AM/PM in a bottom sheet. value / onPick use "HH:MM" (24 h). */
 export function TimePickerSheet({ visible, value, onPick, onClose }: { visible: boolean; value: string; onPick: (hhmm: string) => void; onClose: () => void }) {
+  const { colors } = useTheme();
   const [h24, m0] = (value || '08:00').split(':').map(Number);
   const [hour, setHour] = useState(h24 % 12 || 12);
   const [minute, setMinute] = useState(m0);
-  const [pm, setPm] = useState(h24 >= 12);
+  const [ampm, setAmpm] = useState(h24 >= 12 ? 'PM' : 'AM');
 
   useEffect(() => {
     if (!visible) return;
     const [h, m] = (value || '08:00').split(':').map(Number);
     setHour(h % 12 || 12);
     setMinute(m);
-    setPm(h >= 12);
+    setAmpm(h >= 12 ? 'PM' : 'AM');
   }, [visible, value]);
 
-  const minutes = MINUTES.includes(minute) ? MINUTES : [...MINUTES, minute].sort((a, b) => a - b);
-  const hh = (hour % 12) + (pm ? 12 : 0);
-  const result = `${String(hh).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-  const { colors } = useTheme();
+  const result = `${String((hour % 12) + (ampm === 'PM' ? 12 : 0)).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const nudge = (delta: number) => {
+    // Fine-tuning by one minute for people who find the wheels fiddly (and for screen readers).
+    const total = (((hour % 12) + (ampm === 'PM' ? 12 : 0)) * 60 + minute + delta + 1440) % 1440;
+    const h = Math.floor(total / 60);
+    setHour(h % 12 || 12);
+    setMinute(total % 60);
+    setAmpm(h >= 12 ? 'PM' : 'AM');
+  };
+  const wheel = {
+    itemHeight: 52,
+    visibleItemCount: 5,
+    width: 92,
+    itemTextStyle: { fontSize: 26, fontWeight: '600' as const, color: colors.text },
+    overlayItemStyle: { backgroundColor: colors.primarySoft, borderRadius: radius.md },
+  };
 
   return (
     <Sheet visible={visible} title="Choose a time" onClose={onClose}>
       <AppText variant="display" style={styles.preview} accessibilityLiveRegion="polite" color={colors.primary}>
-        {hour}:{String(minute).padStart(2, '0')} {pm ? 'PM' : 'AM'}
+        {hour}:{String(minute).padStart(2, '0')} {ampm}
       </AppText>
-      <AppText variant="bodyStrong">Hour</AppText>
-      <View style={styles.chips}>
-        {HOURS.map((h) => (
-          <Chip key={h} label={String(h)} a11y={`${h} o'clock`} selected={h === hour} onPress={() => setHour(h)} />
-        ))}
+      <View style={styles.wheels}>
+        <WheelPicker {...wheel} data={HOUR_ITEMS} value={hour} onValueChanged={({ item }) => setHour(item.value)} enableScrollByTapOnItem />
+        <AppText variant="headline">:</AppText>
+        <WheelPicker {...wheel} data={MINUTE_ITEMS} value={minute} onValueChanged={({ item }) => setMinute(item.value)} enableScrollByTapOnItem />
+        <WheelPicker {...wheel} data={AMPM_ITEMS} value={ampm} onValueChanged={({ item }) => setAmpm(item.value)} enableScrollByTapOnItem />
       </View>
-      <AppText variant="bodyStrong">Minutes</AppText>
-      <View style={styles.chips}>
-        {minutes.map((m) => (
-          <Chip key={m} label={String(m).padStart(2, '0')} a11y={`${m} minutes`} selected={m === minute} onPress={() => setMinute(m)} />
-        ))}
-      </View>
-      <View style={styles.chips}>
-        <Chip label="AM" selected={!pm} onPress={() => setPm(false)} flexBasis="48%" />
-        <Chip label="PM" selected={pm} onPress={() => setPm(true)} flexBasis="48%" />
+      <View style={styles.yearRow}>
+        <Button title="− 1 minute" variant="ghost" onPress={() => nudge(-1)} style={styles.flex} />
+        <Button title="+ 1 minute" variant="ghost" onPress={() => nudge(1)} style={styles.flex} />
       </View>
       <View style={styles.actions}>
         <Button title="Done" icon="checkmark" onPress={() => onPick(result)} />
@@ -213,8 +204,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, height: minTouch, alignItems: 'center', justifyContent: 'center' },
   day: { borderRadius: radius.md, borderWidth: 2 },
+  wheels: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { flexGrow: 1, minHeight: minTouch, borderRadius: radius.pill, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   preview: { textAlign: 'center' },
   actions: { gap: spacing.sm, marginTop: spacing.sm },
 });

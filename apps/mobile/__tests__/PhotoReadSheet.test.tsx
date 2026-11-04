@@ -45,3 +45,28 @@ describe('read a box photo from the phone', () => {
     expect(screen.getByText('The reader is busy right now. Wait a minute and try again.')).toBeTruthy();
   });
 });
+
+describe('read a box photo: flaky connection', () => {
+  const fetchMock = jest.fn();
+  beforeEach(() => {
+    jest.useFakeTimers();
+    fetchMock.mockReset();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('tries once more by itself when the first attempt cannot reach the server', async () => {
+    fetchMock
+      .mockImplementationOnce(() => Promise.reject(new TypeError('Network request failed')))
+      .mockImplementationOnce(() => reply({ read: true, name: 'Biogesic', strength: null, expiry: null, guessed: false, reason: null }));
+    const onRead = jest.fn();
+    await render(
+      <ThemeProvider>
+        <PhotoReadSheet uri="file:///box.jpg" patientId={5} onClose={jest.fn()} onRetake={jest.fn()} onRead={onRead} />
+      </ThemeProvider>,
+    );
+    await act(async () => { await jest.advanceTimersByTimeAsync(4500); });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(onRead).toHaveBeenCalledWith({ name: 'Biogesic', strength: null, expiry: null, guessed: false });
+  });
+});
