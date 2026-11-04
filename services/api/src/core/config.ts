@@ -49,7 +49,11 @@ const schema = z.object({
 
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
+  // Tried in this order when the main model is overloaded (503), rate limited (429) or retired (404). Comma separated.
+  GEMINI_FALLBACK_MODELS: z.string().default('gemini-3-flash-preview,gemini-3.6-flash'),
   GEMINI_TIMEOUT_MS: z.coerce.number().default(8000),
+  // How long one model may take before the next one is tried (the last model gets what is left of GEMINI_TIMEOUT_MS).
+  GEMINI_ATTEMPT_MS: z.coerce.number().default(4500),
   // Free tier is rate limited per minute; stay under it instead of collecting 429s.
   GEMINI_MAX_PER_MINUTE: z.coerce.number().default(10),
 

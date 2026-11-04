@@ -26,6 +26,9 @@ The prompt asks Gemini to read the printed text first (`source: "printed"`). Onl
 ## Suggestion for the box
 A scan that matches nothing registered but where the AI read a name answers `{"found":false,"guess":"<name strength, max 31>","guessed":<bool>}` (`guessed` = from looks only). Every scan asks the AI, including boxes with no medicines yet. Nothing read = exactly `{"found":false}`.
 
+## Models, fallback and the free-tier cap
+The client tries `GEMINI_MODEL`, then `GEMINI_FALLBACK_MODELS`, when a model is overloaded (503), limited (429), retired (404) or too slow for its `GEMINI_ATTEMPT_MS` slot. A per-day 429 becomes `daily_limit` (free tier: about 20 requests per day per model; waiting a minute does not help).
+
 ## Budget and limits
 - `AbortController` aborts the Gemini call at `GEMINI_TIMEOUT_MS` (8000), never later than the budget; a backstop `Promise.race` against `SCAN_BUDGET_SECONDS` (9) covers a client that ignores the signal. The route's total stays under 10 s.
 - **One scan at a time per box:** a Redis lock `scan:<device pk>` (15 s TTL). A second press meanwhile is answered `found:false` without calling Gemini (`reason=busy`).

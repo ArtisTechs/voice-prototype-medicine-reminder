@@ -70,3 +70,17 @@ describe('read a box photo: flaky connection', () => {
     expect(onRead).toHaveBeenCalledWith({ name: 'Biogesic', strength: null, expiry: null, guessed: false });
   });
 });
+
+describe('read a box photo: daily limit', () => {
+  it('says the free daily limit is used up instead of "try in a minute"', async () => {
+    const fetchMock = jest.fn(() => reply({ read: false, name: null, strength: null, expiry: null, guessed: false, reason: 'daily_limit' }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    await render(
+      <ThemeProvider>
+        <PhotoReadSheet uri="file:///box.jpg" patientId={5} onClose={jest.fn()} onRetake={jest.fn()} onRead={jest.fn()} />
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    expect(screen.getByText(/free box reading limit is used up/)).toBeTruthy();
+  });
+});

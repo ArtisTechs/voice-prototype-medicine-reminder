@@ -7,6 +7,7 @@
  */
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { settings } from '../core/config';
+import { getLogger } from '../core/logger';
 import type { Candidate } from './match';
 
 export interface VisionRead {
@@ -28,7 +29,9 @@ export interface VisionClient {
   identify(image: Buffer, candidates: Candidate[], opts: { signal: AbortSignal; references?: ReferencePhoto[] }): Promise<VisionRead>;
 }
 
-export type FailureReason = 'no_key' | 'timeout' | 'rate_limited' | 'bad_response' | 'error';
+const log = getLogger('gemini');
+
+export type FailureReason = 'no_key' | 'timeout' | 'rate_limited' | 'daily_limit' | 'bad_response' | 'error';
 
 export class VisionError extends Error {
   constructor(public reason: FailureReason, message?: string) {
@@ -107,7 +110,10 @@ function classify(err: unknown, signal: AbortSignal): VisionError {
   if (err instanceof VisionError) return err;
   if (signal.aborted) return new VisionError('timeout');
   const e = err as { status?: number; name?: string; message?: string };
-  if (e.status === 429 || /RESOURCE_EXHAUSTED|quota|rate/i.test(e.message ?? '')) return new VisionError('rate_limited');
+  if (e.status === 429 || /RESOURCE_EXHAUSTED|quota|rate/i.test(e.message ?? '')) {
+    // The free tier also has a per-day cap (20 requests per model): say so, because waiting a minute will not help.
+    return new VisionError(/per day|perday/i.test(e.message ?? '') ? 'daily_limit' : 'rate_limited');
+  }
   if (e.name === 'AbortError') return new VisionError('timeout');
   return new VisionError('error', `${e.name ?? 'Error'} ${e.status ?? ''} ${String(e.message ?? '').replace(/AIza[\w-]+/g, '<key>').slice(0, 300)}`.trim());
 }
@@ -130,29 +136,51 @@ export class GeminiClient implements VisionClient {
     parts.push({ inlineData: { mimeType: 'image/jpeg', data: image.toString('base64') } });
     parts.push({ text: `Registered medicines: ${list}` });
 
-    try {
-      const res = await this.ai.models.generateContent({
-        model: s.GEMINI_MODEL,
-        contents: [{ role: 'user', parts }],
-        config: {
-          systemInstruction: SYSTEM,
-          responseMimeType: 'application/json',
-          responseSchema: RESPONSE_SCHEMA,
-          temperature: 0,
-          // Room for the JSON even if the model starts to think (a 300 token cap came back empty on Gemini 3).
-          maxOutputTokens: 800,
-          // Reading a label does not need thinking and it costs seconds: 2.5 takes a budget, 3.x a level.
-          ...(/2\.5/i.test(s.GEMINI_MODEL)
-            ? { thinkingConfig: { thinkingBudget: 0 } }
-            : /gemini-3/i.test(s.GEMINI_MODEL)
-              ? { thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } }
-              : {}),
-          abortSignal: opts.signal,
-        },
-      });
-      return parseRead(res.text ?? '');
-    } catch (err) {
-      throw classify(err, opts.signal);
+    // The main model first; if Google says it is overloaded (503), limited (429), gone (404) or answers badly,
+    // the next model gets a go while the time budget (the abort signal) lasts. Each model has its own free quota.
+    const models = [s.GEMINI_MODEL, ...s.GEMINI_FALLBACK_MODELS.split(',').map((m) => m.trim()).filter(Boolean)];
+    let last: VisionError = new VisionError('error');
+    for (const [i, model] of models.entries()) {
+      // A slow model must not eat the whole budget: every model but the last gets a shorter slot of its own.
+      const slot = i < models.length - 1 ? AbortSignal.any([opts.signal, AbortSignal.timeout(s.GEMINI_ATTEMPT_MS)]) : opts.signal;
+      try {
+        return await this.callModel(model, parts, slot);
+      } catch (err) {
+        last = classify(err, slot);
+        log.warn('gemini_model_failed', { model, reason: last.reason, detail: last.reason === 'error' ? last.message : undefined });
+        if (opts.signal.aborted || !worthTryingNextModel(last)) break;
+      }
     }
+    throw last;
   }
+
+  private async callModel(model: string, parts: Record<string, unknown>[], signal: AbortSignal): Promise<VisionRead> {
+    const res = await this.ai!.models.generateContent({
+      model,
+      contents: [{ role: 'user', parts }],
+      config: {
+        systemInstruction: SYSTEM,
+        responseMimeType: 'application/json',
+        responseSchema: RESPONSE_SCHEMA,
+        temperature: 0,
+        // Room for the JSON even if the model starts to think (a 300 token cap came back empty on Gemini 3).
+        maxOutputTokens: 800,
+        // Reading a label does not need thinking and it costs seconds: 2.5 takes a budget, 3.x a level.
+        ...(/2\.5/i.test(model)
+          ? { thinkingConfig: { thinkingBudget: 0 } }
+          : /gemini-3/i.test(model)
+            ? { thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } }
+            : {}),
+        abortSignal: signal,
+      },
+    });
+    return parseRead(res.text ?? '');
+  }
+}
+
+/** Temporary or model-specific trouble: try another model. A timeout, a missing key or an unknown answer shape is not. */
+function worthTryingNextModel(err: VisionError): boolean {
+  if (err.reason === 'rate_limited' || err.reason === 'daily_limit' || err.reason === 'bad_response' || err.reason === 'timeout') return true;
+  if (err.reason !== 'error') return false;
+  return /\b(500|502|503|504|404|400)\b|UNAVAILABLE|INTERNAL|NOT_FOUND/i.test(err.message);
 }

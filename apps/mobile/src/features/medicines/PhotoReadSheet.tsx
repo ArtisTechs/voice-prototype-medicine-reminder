@@ -57,6 +57,7 @@ export function PhotoReadSheet({
         }
         if (cancelled) return;
         if (r.read && r.name) onReadRef.current({ name: r.name, strength: r.strength, expiry: r.expiry, guessed: r.guessed });
+        else if (r.reason === 'daily_limit') setProblem("Today's free box reading limit is used up. It resets tomorrow. You can still type the details or scan the barcode.");
         else if (r.reason === 'rate_limited' || r.reason === 'local_rate_limit') setProblem('The reader is busy right now. Wait a minute and try again.');
         else if (r.reason === 'no_key') setProblem('Reading boxes is not switched on for this server yet.');
         else setProblem("We couldn't read that box. Hold the side with the name printed on it, in good light, and try again.");
