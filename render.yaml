@@ -20,6 +20,8 @@ services:
       # ---- Fill these in the Render dashboard (Environment tab); they are never stored in git ----
       - key: DATABASE_URL        # mysql://user:password@host:3306/medrem  (URL-encode special characters)
         sync: false
+      - key: DATABASE_CA_CERT    # the MySQL provider's CA certificate (Aiven: Overview > CA certificate)
+        sync: false
       - key: GEMINI_API_KEY      # https://aistudio.google.com/apikey
         sync: false
       - key: EXPO_ACCESS_TOKEN   # optional

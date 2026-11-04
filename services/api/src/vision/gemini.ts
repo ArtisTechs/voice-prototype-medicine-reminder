@@ -80,7 +80,7 @@ function classify(err: unknown, signal: AbortSignal): VisionError {
   const e = err as { status?: number; name?: string; message?: string };
   if (e.status === 429 || /RESOURCE_EXHAUSTED|quota|rate/i.test(e.message ?? '')) return new VisionError('rate_limited');
   if (e.name === 'AbortError') return new VisionError('timeout');
-  return new VisionError('error', e.name);
+  return new VisionError('error', `${e.name ?? 'Error'} ${e.status ?? ''} ${String(e.message ?? '').replace(/AIza[\w-]+/g, '<key>').slice(0, 300)}`.trim());
 }
 
 export class GeminiClient implements VisionClient {

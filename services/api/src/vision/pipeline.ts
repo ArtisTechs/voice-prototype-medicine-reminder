@@ -98,7 +98,7 @@ export async function identify(image: Buffer, candidates: Candidate[], opts: Ide
   } catch (err) {
     const reason: FailureReason = err instanceof VisionError ? err.reason : 'error';
     if (reason === 'rate_limited') log.warn('gemini_429');
-    else log.warn('scan_failed', { reason });
+    else log.warn('scan_failed', { reason, detail: err instanceof VisionError && reason === 'error' ? err.message : undefined });
     return { ...done(), reason };
   } finally {
     clearTimeout(timer);
