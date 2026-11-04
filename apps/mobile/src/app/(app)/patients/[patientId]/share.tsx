@@ -1,8 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, Share } from 'react-native';
+import { useState } from 'react';
+import { Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 
 import { useCaregivers, useCreateInvite, useLeavePatient, usePatient } from '../../../../api/hooks';
 import { AppText } from '../../../../components/AppText';
+import { useDialog } from '../../../../components/Dialog';
 import { Button } from '../../../../components/Button';
 import { Card } from '../../../../components/Card';
 import { ListItem } from '../../../../components/ListItem';
@@ -17,27 +20,26 @@ export default function ShareScreen() {
   const people = useCaregivers(pid);
   const invite = useCreateInvite(pid);
   const leave = useLeavePatient(pid);
+  const dialog = useDialog();
+  const [copied, setCopied] = useState(false);
   const code = invite.data?.code;
   const onlyOne = (people.data?.length ?? 0) <= 1;
 
   const confirmLeave = () =>
-    Alert.alert(
-      onlyOne ? `Delete ${patient.data?.displayName}?` : `Stop following ${patient.data?.displayName}?`,
-      onlyOne
+    dialog.confirm({
+      title: onlyOne ? `Delete ${patient.data?.displayName}?` : `Stop following ${patient.data?.displayName}?`,
+      message: onlyOne
         ? 'You are the only caregiver, so their medicines, history and photos will be deleted.'
         : 'The other caregivers keep everything.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: onlyOne ? 'Delete' : 'Leave',
-          style: 'destructive',
-          onPress: async () => {
-            await leave.mutateAsync();
-            router.replace('/');
-          },
-        },
-      ],
-    );
+      confirmLabel: onlyOne ? 'Delete' : 'Stop following',
+      cancelLabel: onlyOne ? 'Keep it' : 'Cancel',
+      tone: 'danger',
+      icon: onlyOne ? 'trash' : 'exit-outline',
+      onConfirm: async () => {
+        await leave.mutateAsync();
+        router.replace('/');
+      },
+    });
 
   return (
     <Screen>
@@ -52,6 +54,16 @@ export default function ShareScreen() {
               {code}
             </AppText>
             <AppText muted>Valid until {fmtLongDate(invite.data!.expiresAt)}</AppText>
+            <Button
+              title={copied ? 'Copied' : 'Copy the code'}
+              icon={copied ? 'checkmark' : 'copy'}
+              variant="secondary"
+              onPress={async () => {
+                await Clipboard.setStringAsync(code);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2500);
+              }}
+            />
             <Button
               title="Send the code"
               icon="share-social"

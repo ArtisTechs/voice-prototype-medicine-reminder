@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { api } from '../../../api/client';
 import { useMe, useUpdateMe } from '../../../api/hooks';
@@ -8,6 +8,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { AppText } from '../../../components/AppText';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
+import { useDialog } from '../../../components/Dialog';
 import { ChoiceGroup, TextField } from '../../../components/Fields';
 import { Screen } from '../../../components/Screen';
 import { Banner, CardSkeleton, ErrorState, errorMessage } from '../../../components/States';
@@ -41,6 +42,7 @@ export default function Settings() {
   const me = useMe();
   const update = useUpdateMe();
   const { signOut, forget } = useAuth();
+  const dialog = useDialog();
   const { pref, setPref } = useTheme();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -66,28 +68,25 @@ export default function Settings() {
   };
 
   const confirmDelete = () =>
-    Alert.alert(
-      'Delete your account?',
-      'Your account and alerts are deleted. People only you look after are deleted too, with their medicines, history and photos. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete everything',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await api('/api/v1/me', { method: 'DELETE' });
-              await forgetPushToken();
-              await forget();
-            } catch (e) {
-              setError(errorMessage(e));
-              setDeleting(false);
-            }
-          },
-        },
-      ],
-    );
+    dialog.confirm({
+      title: 'Delete your account?',
+      message:
+        'Your account and alerts are deleted. People only you look after are deleted too, with their medicines, history and photos. This cannot be undone.',
+      confirmLabel: 'Delete everything',
+      cancelLabel: 'Keep my account',
+      tone: 'danger',
+      onConfirm: async () => {
+        setDeleting(true);
+        try {
+          await api('/api/v1/me', { method: 'DELETE' });
+          await forgetPushToken();
+          await forget();
+        } catch (e) {
+          setDeleting(false);
+          throw e;
+        }
+      },
+    });
 
   if (me.isPending) return <Screen><CardSkeleton lines={6} /></Screen>;
   if (me.isError) return <Screen><ErrorState error={me.error} onRetry={me.refetch} /></Screen>;

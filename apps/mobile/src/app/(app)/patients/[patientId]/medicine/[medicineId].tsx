@@ -1,9 +1,9 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
 
 import { useDeleteMedicine, useMedicine, useMedicines, useSaveMedicine } from '../../../../../api/hooks';
 import { Button } from '../../../../../components/Button';
+import { useDialog } from '../../../../../components/Dialog';
 import { Screen } from '../../../../../components/Screen';
 import { Banner, CardSkeleton, ErrorState } from '../../../../../components/States';
 import { StatusBadge } from '../../../../../components/StatusBadge';
@@ -20,20 +20,21 @@ export default function EditMedicine() {
   const meds = useMedicines(pid);
   const save = useSaveMedicine(pid, mid);
   const del = useDeleteMedicine(pid);
+  const dialog = useDialog();
   const [saved, setSaved] = useState(false);
 
   const confirmDelete = () =>
-    Alert.alert(`Delete ${med.data?.label}?`, 'It leaves the VOICE schedule. Past history is kept.', [
-      { text: 'Keep it', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await del.mutateAsync(mid);
-          router.back();
-        },
+    dialog.confirm({
+      title: `Delete ${med.data?.label}?`,
+      message: 'It leaves the VOICE schedule. Past history is kept.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      tone: 'danger',
+      onConfirm: async () => {
+        await del.mutateAsync(mid);
+        router.back();
       },
-    ]);
+    });
 
   return (
     <Screen refreshing={med.isRefetching} onRefresh={med.refetch}>

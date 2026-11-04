@@ -2,13 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Alert } from 'react-native';
 import { z } from 'zod';
 
 import { useCreatePatient, useNearbyDevices, usePairDevice } from '../../../api/hooks';
 import { AppText } from '../../../components/AppText';
 import { Button } from '../../../components/Button';
 import { Screen } from '../../../components/Screen';
+import { useDialog } from '../../../components/Dialog';
 import { Banner, errorMessage } from '../../../components/States';
 import { applyServerErrors, FormTextField } from '../../../features/forms';
 import { VoicePicker } from '../../../features/patients/VoicePicker';
@@ -22,6 +22,7 @@ type Values = z.infer<typeof schema>;
 export default function NewPatient() {
   const create = useCreatePatient();
   const pair = usePairDevice();
+  const dialog = useDialog();
   const nearby = useNearbyDevices();
   // undefined = not chosen yet: a new VOICE (or one you already use) is picked for you.
   const [picked, setPicked] = useState<string | null | undefined>(undefined);
@@ -47,7 +48,7 @@ export default function NewPatient() {
         router.replace(`/patients/${id}`);
         return;
       } catch (e) {
-        Alert.alert('Person added, VOICE not connected', errorMessage(e));
+        dialog.notify({ title: 'Person added, VOICE not connected', message: errorMessage(e), tone: 'warning' });
       }
     }
     router.replace(`/patients/${id}/device`);

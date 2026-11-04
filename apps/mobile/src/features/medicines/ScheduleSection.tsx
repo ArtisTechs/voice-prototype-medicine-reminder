@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useScheduleMutations } from '../../api/hooks';
 import type { Medicine, Schedule } from '../../api/types';
 import { AppText } from '../../components/AppText';
+import { useDialog } from '../../components/Dialog';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ChoiceGroup, TimeField } from '../../components/Fields';
@@ -21,6 +22,7 @@ function daysText(days: number[]): string {
 /** Dose times for one medicine. Each time is one pillbox alarm per day. */
 export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medicine }) {
   const m = useScheduleMutations(pid, medicine.id);
+  const dialog = useDialog();
   const [editing, setEditing] = useState<Schedule | 'new' | null>(null);
   const [time, setTime] = useState('08:00');
   const [days, setDays] = useState<number[]>(ALL);
@@ -48,10 +50,15 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
   };
 
   const remove = (s: Schedule) =>
-    Alert.alert(`Remove the ${fmtClock(s.time)} dose?`, 'VOICE will stop reminding at this time.', [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => m.remove.mutate(s.id) },
-    ]);
+    dialog.confirm({
+      title: `Remove the ${fmtClock(s.time)} dose?`,
+      message: 'VOICE will stop reminding at this time.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep it',
+      tone: 'danger',
+      icon: 'alarm',
+      onConfirm: () => m.remove.mutateAsync(s.id),
+    });
 
   return (
     <View style={styles.wrap}>

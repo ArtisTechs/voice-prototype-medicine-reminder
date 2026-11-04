@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { usePhotoMutations, usePhotos } from '../../api/hooks';
 import { AppText } from '../../components/AppText';
+import { useDialog } from '../../components/Dialog';
 import { AuthImage } from '../../components/AuthImage';
 import { Button } from '../../components/Button';
 import { Banner, Skeleton, errorMessage } from '../../components/States';
@@ -21,6 +22,7 @@ const ANGLE_WORD: Record<string, string> = { front: 'Front', back: 'Back', side:
 export function PhotoSection({ pid, mid }: { pid: number; mid: number }) {
   const photos = usePhotos(pid, mid);
   const m = usePhotoMutations(pid, mid);
+  const dialog = useDialog();
   const [angle, setAngle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,10 +56,14 @@ export function PhotoSection({ pid, mid }: { pid: number; mid: number }) {
               accessibilityRole="button"
               accessibilityLabel={`${ANGLE_WORD[p.angle]} photo. Double tap to remove.`}
               onPress={() =>
-                Alert.alert('Remove this photo?', undefined, [
-                  { text: 'Keep it', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: () => m.remove.mutate(p.id) },
-                ])
+                dialog.confirm({
+                  title: 'Remove this photo?',
+                  confirmLabel: 'Remove',
+                  cancelLabel: 'Keep it',
+                  tone: 'danger',
+                  icon: 'image',
+                  onConfirm: () => m.remove.mutateAsync(p.id),
+                })
               }
               style={styles.thumbWrap}
             >

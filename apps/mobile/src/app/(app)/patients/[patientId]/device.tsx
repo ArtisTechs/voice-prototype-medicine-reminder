@@ -2,11 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { useDevice, useNearbyDevices, usePairDevice, useUnpairDevice } from '../../../../api/hooks';
 import { AppText } from '../../../../components/AppText';
+import { useDialog } from '../../../../components/Dialog';
 import { Button } from '../../../../components/Button';
 import { Card } from '../../../../components/Card';
 import { Screen } from '../../../../components/Screen';
@@ -94,21 +95,23 @@ export default function DeviceScreen() {
   const pid = Number(patientId);
   const q = useDevice(pid);
   const unpair = useUnpairDevice(pid);
+  const dialog = useDialog();
   const [changing, setChanging] = useState(false);
   const notPaired = q.isError && q.error instanceof ApiError && q.error.code === 'no_device';
   const others = q.data ? q.data.people.filter((p) => !p.current) : [];
 
   const confirmUnpair = () =>
-    Alert.alert(
-      'Remove from this VOICE?',
-      others.length
+    dialog.confirm({
+      title: 'Remove from this VOICE?',
+      message: others.length
         ? 'This person stops getting reminders. The others on this VOICE keep theirs.'
         : 'It will stop getting the schedule until it is connected again.',
-      [
-        { text: 'Keep it', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => unpair.mutate() },
-      ],
-    );
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep it',
+      tone: 'danger',
+      icon: 'unlink',
+      onConfirm: () => unpair.mutateAsync(),
+    });
 
   return (
     <Screen refreshing={q.isRefetching} onRefresh={q.refetch}>

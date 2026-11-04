@@ -1,13 +1,13 @@
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import type { ComponentProps } from 'react';
 
 import { fmtClock, fmtLongDate, isoDay } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
 import { minTouch, radius, spacing, type } from '../theme/tokens';
 import { AppText } from './AppText';
+import { DatePickerSheet, TimePickerSheet } from './Pickers';
 
 type FieldShellProps = { label: string; helper?: string; error?: string; children: ReactNode; trailing?: ReactNode };
 
@@ -37,8 +37,10 @@ export function FieldShell({ label, helper, error, children, trailing }: FieldSh
 
 type TextFieldProps = TextInputProps & { label: string; helper?: string; error?: string; unit?: string; ref?: ComponentProps<typeof TextInput>['ref'] };
 
-export function TextField({ label, helper, error, unit, style, ref, ...rest }: TextFieldProps) {
+export function TextField({ label, helper, error, unit, style, ref, secureTextEntry, ...rest }: TextFieldProps) {
   const { colors } = useTheme();
+  // Password fields get a show/hide eye so people can check what they typed.
+  const [hidden, setHidden] = useState(true);
   return (
     <FieldShell label={label} helper={helper} error={error}>
       <View
@@ -53,9 +55,21 @@ export function TextField({ label, helper, error, unit, style, ref, ...rest }: T
           accessibilityHint={helper}
           placeholderTextColor={colors.textMuted}
           style={[type.body, styles.input, { color: colors.text }, style]}
+          secureTextEntry={secureTextEntry ? hidden : false}
           {...rest}
         />
         {unit ? <AppText muted>{unit}</AppText> : null}
+        {secureTextEntry ? (
+          <Pressable
+            onPress={() => setHidden((h) => !h)}
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
+            hitSlop={8}
+            style={styles.eye}
+          >
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={24} color={colors.textMuted} />
+          </Pressable>
+        ) : null}
       </View>
     </FieldShell>
   );
@@ -130,11 +144,6 @@ export function DateField({
   minimumDate?: Date;
 }) {
   const [open, setOpen] = useState(false);
-  const current = value ? new Date(`${value}T12:00:00`) : new Date();
-  const onPick = (e: DateTimePickerEvent, d?: Date) => {
-    setOpen(Platform.OS === 'ios');
-    if (e.type === 'set' && d) onChange(isoDay(d));
-  };
   return (
     <>
       <PickerButton
@@ -147,9 +156,16 @@ export function DateField({
         error={error}
         helper={helper}
       />
-      {open ? (
-        <DateTimePicker value={current} mode="date" minimumDate={minimumDate} onChange={onPick} />
-      ) : null}
+      <DatePickerSheet
+        visible={open}
+        value={value}
+        minimumDate={minimumDate}
+        onPick={(d) => {
+          setOpen(false);
+          onChange(d);
+        }}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }
@@ -157,23 +173,18 @@ export function DateField({
 /** Time picker. value/onChange use "HH:MM" (24 h, sent to the API); shown as 8:00 AM. */
 export function TimeField({ label, value, onChange, error }: { label: string; value: string; onChange: (v: string) => void; error?: string }) {
   const [open, setOpen] = useState(false);
-  const [h, m] = (value || '08:00').split(':').map(Number);
-  const current = new Date();
-  current.setHours(h, m, 0, 0);
   return (
     <>
       <PickerButton label={label} value={value ? fmtClock(value) : ''} placeholder="Choose a time" icon="time" onPress={() => setOpen(true)} error={error} />
-      {open ? (
-        <DateTimePicker
-          value={current}
-          mode="time"
-          minuteInterval={5}
-          onChange={(e, d) => {
-            setOpen(Platform.OS === 'ios');
-            if (e.type === 'set' && d) onChange(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
-          }}
-        />
-      ) : null}
+      <TimePickerSheet
+        visible={open}
+        value={value}
+        onPick={(t) => {
+          setOpen(false);
+          onChange(t);
+        }}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }
@@ -255,6 +266,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   input: { flex: 1, paddingVertical: spacing.sm },
+  eye: { minWidth: minTouch, minHeight: minTouch, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.md },
   errorRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'flex-start' },
   flex: { flex: 1 },
   clear: { minHeight: minTouch, justifyContent: 'center' },
