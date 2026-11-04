@@ -14,7 +14,7 @@
     "server": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-SERVER.sslip.io" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://voice-prototype-medicine-reminder.onrender.com" }
     },
     "production": {}
   }
