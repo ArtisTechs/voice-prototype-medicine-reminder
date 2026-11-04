@@ -160,7 +160,7 @@ export function usePhotoMutations(id: number, mid: number) {
   return {
     upload: useMutation({
       mutationFn: async ({ uri, angle }: { uri: string; angle: string }) => {
-        const form = await photoForm(uri, `${angle}.jpg`, { angle });
+        const form = photoForm(uri, `${angle}.jpg`, { angle });
         return api<Photo>(base, { method: 'POST', body: form, timeoutMs: 60000 });
       },
       onSuccess: done,

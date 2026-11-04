@@ -42,7 +42,7 @@ export function PhotoReadSheet({
       try {
         const send = async () => {
           // A new FormData each time: a body that was already sent cannot be reused.
-          const form = await photoForm(uri, 'box.jpg');
+          const form = photoForm(uri, 'box.jpg');
           return api<Reply>(`/api/v1/patients/${patientId}/medicines/read-package`, { method: 'POST', body: form, timeoutMs: 60000 });
         };
         let r: Reply;

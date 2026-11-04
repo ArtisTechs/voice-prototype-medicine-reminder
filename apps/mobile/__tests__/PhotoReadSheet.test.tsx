@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { PhotoReadSheet } from '../src/features/medicines/PhotoReadSheet';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 
-jest.mock('../src/lib/photoForm', () => ({ photoForm: jest.fn(async () => new FormData()) }));
+jest.mock('../src/lib/photoForm', () => ({ photoForm: jest.fn(() => new FormData()) }));
 
 const reply = (body: unknown) => Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }));
 
