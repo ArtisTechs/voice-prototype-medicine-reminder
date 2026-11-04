@@ -88,4 +88,7 @@ export function checkProd(): void {
   if (s.ENV === 'prod' && s.JWT_SECRET === EXAMPLE_SECRET) {
     throw new Error('Refusing to start in prod with the example JWT_SECRET');
   }
+  if (s.ENV === 'prod' && (!s.REDIS_URL.trim() || s.REDIS_URL === 'redis://redis:6379/0') && !process.env.REDIS_URL?.trim()) {
+    throw new Error('REDIS_URL is not set: paste the Redis (Key Value) internal URL into the environment');
+  }
 }
