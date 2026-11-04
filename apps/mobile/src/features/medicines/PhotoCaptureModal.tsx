@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView } from 'expo-camera';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { useRef, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
@@ -8,14 +8,23 @@ import { AppText } from '../../components/AppText';
 import { Button } from '../../components/Button';
 import { useTheme } from '../../theme/ThemeProvider';
 import { spacing } from '../../theme/tokens';
+import { CameraPermissionNotice, useCameraAccess } from './CameraPermission';
 
 const ANGLE_WORDS: Record<string, string> = { front: 'front', back: 'back', side: 'side' };
 
-type Props = { visible: boolean; angle: string; onClose: () => void; onCaptured: (uri: string) => void };
+type Props = {
+  visible: boolean;
+  angle: string;
+  onClose: () => void;
+  onCaptured: (uri: string) => void;
+  /** Replace the heading and hint (used when the photo is only read, not kept). */
+  title?: string;
+  hint?: string;
+};
 
 /** Reference photo of the medicine package; resized to <=1280 px before upload. */
-export function PhotoCaptureModal({ visible, angle, onClose, onCaptured }: Props) {
-  const [permission, requestPermission] = useCameraPermissions();
+export function PhotoCaptureModal({ visible, angle, onClose, onCaptured, title, hint }: Props) {
+  const { permission, request: requestPermission } = useCameraAccess();
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const camera = useRef<CameraView>(null);
@@ -39,14 +48,11 @@ export function PhotoCaptureModal({ visible, angle, onClose, onCaptured }: Props
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} onShow={() => setReady(false)}>
       <SafeAreaView style={[styles.flex, { backgroundColor: colors.bg }]}>
         <View style={styles.header}>
-          <AppText variant="title">Photo of the {ANGLE_WORDS[angle] ?? 'box'}</AppText>
-          <AppText muted>Good light, box fills the frame, name easy to read. The VOICE camera uses these to recognise the box.</AppText>
+          <AppText variant="title">{title ?? `Photo of the ${ANGLE_WORDS[angle] ?? 'box'}`}</AppText>
+          <AppText muted>{hint ?? 'Good light, box fills the frame, name easy to read. The VOICE camera uses these to recognise the box.'}</AppText>
         </View>
         {!permission ? null : !permission.granted ? (
-          <View style={styles.center}>
-            <AppText>The camera is needed to take package photos.</AppText>
-            {permission.canAskAgain ? <Button title="Allow camera" icon="camera" onPress={requestPermission} /> : null}
-          </View>
+          <CameraPermissionNotice reason="The camera is needed to take package photos." canAskAgain={permission.canAskAgain} onAllow={requestPermission} />
         ) : visible ? (
           <CameraView ref={camera} style={styles.flex} facing="back" onCameraReady={() => setReady(true)} />
         ) : null}

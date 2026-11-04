@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Linking } from 'react-native';
+import { AppState, Linking } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
@@ -11,9 +11,19 @@ export function PushPrompt() {
   const [state, setState] = useState<PushState | 'loading'>('loading');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    permissionState()
-      .then(setState)
-      .catch(() => setState('unsupported'));
+    const check = () =>
+      permissionState()
+        .then(setState)
+        .catch(() => setState('unsupported'));
+    check();
+    // Coming back from the phone's Settings with notifications switched on: re-register and hide this card.
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return;
+      registerForPush(false)
+        .then(setState)
+        .catch(check);
+    });
+    return () => sub.remove();
   }, []);
   if (state === 'loading' || state === 'granted' || state === 'unsupported') return null;
   return (

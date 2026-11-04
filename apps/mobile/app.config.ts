@@ -28,13 +28,21 @@ const config: ExpoConfig = {
       monochromeImage: './assets/android-icon-monochrome.png',
     },
     // The app only needs the camera and notifications; keep the store listing free of anything else.
-    blockedPermissions: ['android.permission.RECORD_AUDIO', 'android.permission.SYSTEM_ALERT_WINDOW'],
+    // Camera + notifications (Android 13+ needs POST_NOTIFICATIONS declared or the prompt never appears).
+    permissions: ['android.permission.CAMERA', 'android.permission.POST_NOTIFICATIONS', 'android.permission.VIBRATE'],
+    blockedPermissions: [
+      'android.permission.RECORD_AUDIO',
+      'android.permission.SYSTEM_ALERT_WINDOW',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+    ],
     predictiveBackGestureEnabled: false,
   },
   web: { favicon: './assets/favicon.png' },
   plugins: [
     'expo-router',
-    'expo-secure-store',
+    // Tokens are kept in the secure store; no Face ID / biometrics prompt is used, so no Face ID text in the iOS build.
+    ['expo-secure-store', { faceIDPermission: false }],
     [
       'expo-splash-screen',
       {
@@ -49,6 +57,7 @@ const config: ExpoConfig = {
       'expo-camera',
       {
         cameraPermission: 'Allow VOICE to use the camera to scan medicine barcodes and take package photos.',
+        microphonePermission: false, // photos and barcodes only: no microphone text in the iOS build
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,
       },

@@ -178,6 +178,11 @@ export type Scan = {
   correctedNone: boolean;
   correctedAt: string | null;
   ocrExpiry: string | null;
+  /** What was printed on the package, read by the AI (null when nothing was read). */
+  readName: string | null;
+  readStrength: string | null;
+  /** The name is a guess from how the box looks, not printed text. */
+  guessed: boolean;
   durationMs: number;
   imageUrl: string;
   createdAt: string;

@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView } from 'expo-camera';
 import { useRef } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,12 +7,13 @@ import { AppText } from '../../components/AppText';
 import { Button } from '../../components/Button';
 import { useTheme } from '../../theme/ThemeProvider';
 import { spacing } from '../../theme/tokens';
+import { CameraPermissionNotice, useCameraAccess } from './CameraPermission';
 
 type Props = { visible: boolean; onClose: () => void; onScanned: (code: string) => void };
 
 /** Phone-camera barcode scan for the medicine form, with a "type it instead" way out. */
 export function BarcodeScannerModal({ visible, onClose, onScanned }: Props) {
-  const [permission, requestPermission] = useCameraPermissions();
+  const { permission, request: requestPermission } = useCameraAccess();
   const done = useRef(false);
   const { colors } = useTheme();
 
@@ -26,10 +27,11 @@ export function BarcodeScannerModal({ visible, onClose, onScanned }: Props) {
           <AppText muted>Hold the box steady so the barcode fills the frame.</AppText>
         </View>
         {!permission ? null : !permission.granted ? (
-          <View style={styles.center}>
-            <AppText>The camera is needed to scan. You can also type the number printed under the barcode.</AppText>
-            {permission.canAskAgain ? <Button title="Allow camera" icon="camera" onPress={requestPermission} /> : null}
-          </View>
+          <CameraPermissionNotice
+            reason="The camera is needed to scan. You can also type the number printed under the barcode."
+            canAskAgain={permission.canAskAgain}
+            onAllow={requestPermission}
+          />
         ) : visible ? (
           <CameraView
             style={styles.flex}

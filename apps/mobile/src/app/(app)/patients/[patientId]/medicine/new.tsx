@@ -22,6 +22,7 @@ export default function NewMedicine() {
         <ErrorState error={meds.error} onRetry={meds.refetch} />
       ) : (
         <MedicineForm
+          patientId={pid}
           others={meds.data}
           submitLabel="Save medicine"
           onSubmit={async (v) => {

@@ -46,7 +46,7 @@ function ScanCard({ pid, scan, medicines }: { pid: number; scan: Scan; medicines
         <AppText muted>{ago(scan.createdAt)}</AppText>
       </View>
       <AppText variant="title">{shownMedicine ?? 'Unknown box'}</AppText>
-      {!corrected && scan.found ? <AppText muted>Recognised {METHOD[scan.method]}.</AppText> : null}
+      {!corrected && scan.found ? <AppText muted>Recognised {METHOD[scan.method]}{scan.guessed ? " (a guess from how the box looks)" : ""}.</AppText> : null}
       {corrected ? <AppText muted>Corrected by a caregiver.</AppText> : null}
       {scan.ocrExpiry ? <AppText muted>Label says EXP {scan.ocrExpiry} (the date you entered is used).</AppText> : null}
       {correct.isError ? <Banner tone="error" message={errorMessage(correct.error)} /> : null}
