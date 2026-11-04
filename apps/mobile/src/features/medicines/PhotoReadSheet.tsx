@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { api } from '../../api/client';
+import { photoForm } from '../../lib/photoForm';
 import { ApiError } from '../../lib/apiError';
 import { AppText } from '../../components/AppText';
 import { Button } from '../../components/Button';
@@ -39,10 +40,9 @@ export function PhotoReadSheet({
     setProblem(null);
     (async () => {
       try {
-        const send = () => {
+        const send = async () => {
           // A new FormData each time: a body that was already sent cannot be reused.
-          const form = new FormData();
-          form.append('file', { uri, name: 'box.jpg', type: 'image/jpeg' } as unknown as Blob);
+          const form = await photoForm(uri, 'box.jpg');
           return api<Reply>(`/api/v1/patients/${patientId}/medicines/read-package`, { method: 'POST', body: form, timeoutMs: 60000 });
         };
         let r: Reply;

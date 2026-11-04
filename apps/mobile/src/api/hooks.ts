@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { photoForm } from '../lib/photoForm';
 
 import { api } from './client';
 import { qk } from './keys';
@@ -158,10 +159,8 @@ export function usePhotoMutations(id: number, mid: number) {
   const base = `${p(id)}/medicines/${mid}/photos`;
   return {
     upload: useMutation({
-      mutationFn: ({ uri, angle }: { uri: string; angle: string }) => {
-        const form = new FormData();
-        form.append('file', { uri, name: `${angle}.jpg`, type: 'image/jpeg' } as unknown as Blob);
-        form.append('angle', angle);
+      mutationFn: async ({ uri, angle }: { uri: string; angle: string }) => {
+        const form = await photoForm(uri, `${angle}.jpg`, { angle });
         return api<Photo>(base, { method: 'POST', body: form, timeoutMs: 60000 });
       },
       onSuccess: done,
