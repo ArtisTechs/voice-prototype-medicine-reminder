@@ -7,6 +7,7 @@ import * as medRepo from '../../repositories/medicines';
 import { medicineCreate, medicineUpdate, scheduleCreate, scheduleUpdate } from '../../schemas/medicine';
 import * as medicineService from '../../services/medicineService';
 import * as referenceService from '../../services/referenceService';
+import * as scanService from '../../services/scanService';
 
 export const medicinesRouter = Router();
 const M = '/patients/:patientId/medicines';
@@ -42,6 +43,19 @@ route(medicinesRouter, 'patch', `${M}/:medicineId/schedules/:scheduleId`, { tag:
 route(medicinesRouter, 'delete', `${M}/:medicineId/schedules/:scheduleId`, { tag: 'schedules', summary: 'Remove a dose time', status: 204 }, async ({ params }) => {
   await medicineService.deleteSchedule(params.patientId, params.medicineId, params.scheduleId);
 });
+
+// ---- fill the add-medicine form from a photo of the box ----------------------------------------
+
+const uploadOnce = multer({ storage: multer.memoryStorage(), limits: { fileSize: referenceService.MAX_UPLOAD, files: 1 } }).single('file');
+
+route(
+  medicinesRouter, 'post', `${M}/read-package`,
+  { tag: 'medicines', summary: 'Read the name, strength and expiry from a photo of a package (multipart: file); nothing is saved', middleware: [uploadOnce], docBody: { 'multipart/form-data': { schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } } } },
+  async ({ req }) => {
+    if (!req.file) throw unsupportedMedia('Send a JPEG or PNG photo.');
+    return scanService.readPackage(req.file.buffer);
+  },
+);
 
 // ---- reference photos ---------------------------------------------------------------------------
 

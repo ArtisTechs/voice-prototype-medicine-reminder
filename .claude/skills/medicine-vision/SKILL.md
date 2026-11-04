@@ -17,6 +17,12 @@ Identify which of **this box's registered medicines** is in a 1024x768 JPEG of t
 3. **The answer comes from MySQL** (`scanAnswer`): `name, dose, instructions, expiry, slot, qty, low, expired` are read from the matched medicine's row and cut to the camera limits (31 / 19 / 63). Nothing the model read is echoed. `readExpiry` is stored on the scan (`scans.read_expiry`, shown in the app as `ocrExpiry`) as information only.
 4. **Failures** (timeout, 429, missing key, bad reply, anything) → `{"found":false}` and a logged reason (`no_key | timeout | rate_limited | bad_response | error | busy | local_rate_limit | low_confidence | no_match`). The scan photo and result are still saved.
 
+## Add a medicine by scanning it ("learn")
+`POST /patients/:id/scans/learn` sets a Redis flag `scan:learn:<patient>` for 3 minutes. The next scan from that person's VOICE then calls Gemini even with no registered medicines (`identify(..., { learn: true })`), stores what it read in `scans.read_name / read_strength / read_expiry`, files the scan under that person, skips the unknown-package alert, and clears the flag. The box still gets `{"found":false}`. The app (`VoiceScanSheet`) polls the newest scan and fills the add-medicine form.
+
+## Reading first, a labelled guess second
+The prompt asks Gemini to read the printed text first (`source: "printed"`). Only when the name is unreadable may it recognise a well-known product by packaging (`source: "appearance"`), never above 0.9 confidence and never inventing a name. In code (`pipeline.ts`): a registered medicine matched by look needs `SCAN_MIN_CONFIDENCE_LOOKS` (0.9) instead of 0.7; a guessed name is never fuzzy-matched; `SCAN_GUESS_FROM_LOOKS=false` ignores guesses entirely. The scan row keeps `guessed`, and the app shows guesses as guesses ("check it carefully"). The same reader serves `POST /patients/:id/medicines/read-package` (phone photo, not stored).
+
 ## Budget and limits
 - `AbortController` aborts the Gemini call at `GEMINI_TIMEOUT_MS` (8000), never later than the budget; a backstop `Promise.race` against `SCAN_BUDGET_SECONDS` (9) covers a client that ignores the signal. The route's total stays under 10 s.
 - **One scan at a time per box:** a Redis lock `scan:<device pk>` (15 s TTL). A second press meanwhile is answered `found:false` without calling Gemini (`reason=busy`).

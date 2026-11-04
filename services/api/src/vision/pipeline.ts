@@ -23,6 +23,11 @@ export interface Match {
   method: 'llm' | 'ocr' | 'none';
   score: number | null;
   readExpiry: string | null;
+  /** What Gemini read on the package, kept for the add-medicine "scan with VOICE" flow. */
+  readName?: string | null;
+  readStrength?: string | null;
+  /** The name or match came from how the package looks, not from printed text: show it to people as a guess. */
+  guessed?: boolean;
   reason?: FailureReason | 'busy' | 'local_rate_limit' | 'no_candidates' | 'low_confidence' | 'no_match';
   timings: Record<string, number>;
 }
@@ -44,6 +49,8 @@ async function withinQuota(): Promise<boolean> {
 export interface IdentifyOptions {
   budgetSeconds?: number;
   references?: () => Promise<ReferencePhoto[]>;
+  /** The app is waiting to learn a new medicine from this scan: read the package even when the box has no medicines yet. */
+  learn?: boolean;
 }
 
 export async function identify(image: Buffer, candidates: Candidate[], opts: IdentifyOptions = {}): Promise<Match> {
@@ -56,7 +63,7 @@ export async function identify(image: Buffer, candidates: Candidate[], opts: Ide
     return result;
   };
 
-  if (!candidates.length) return { ...done(), reason: 'no_candidates' };
+  if (!candidates.length && !opts.learn) return { ...done(), reason: 'no_candidates' };
   if (!(await withinQuota())) {
     log.warn('scan_local_rate_limit');
     return { ...done(), reason: 'local_rate_limit' };
@@ -84,15 +91,23 @@ export async function identify(image: Buffer, candidates: Candidate[], opts: Ide
     const read = await Promise.race([call, backstop]);
 
     result.readExpiry = read.readExpiry;
+    // A guess from looks only counts when it is switched on.
+    const guess = read.source === 'appearance';
+    if (guess && !s.SCAN_GUESS_FROM_LOOKS) return { ...done(), reason: 'no_match' };
+    result.readName = read.readName || null;
+    result.readStrength = read.readStrength || null;
+    result.guessed = guess;
     const ids = new Set(candidates.map((c) => c.id));
     if (read.medicineId !== null) {
       // The id must be one of this box's medicines; the model does not get to name anything else.
-      if (ids.has(read.medicineId) && read.confidence >= s.SCAN_MIN_CONFIDENCE) {
+      const needed = guess ? Math.max(s.SCAN_MIN_CONFIDENCE, s.SCAN_MIN_CONFIDENCE_LOOKS) : s.SCAN_MIN_CONFIDENCE;
+      if (ids.has(read.medicineId) && read.confidence >= needed) {
         return { ...done(), medicineId: read.medicineId, method: 'llm', score: read.confidence };
       }
       return { ...done(), score: read.confidence, reason: 'low_confidence' };
     }
-    const fuzzy = fuzzyMatch(read.readName, read.readStrength, candidates, s.SCAN_FUZZY_THRESHOLD);
+    // No id: only a name that was really printed may be matched by text. A guessed name is shown, never matched.
+    const fuzzy = guess ? null : fuzzyMatch(read.readName, read.readStrength, candidates, s.SCAN_FUZZY_THRESHOLD);
     if (fuzzy) return { ...done(), medicineId: fuzzy.id, method: 'ocr', score: fuzzy.score };
     return { ...done(), reason: 'no_match' };
   } catch (err) {

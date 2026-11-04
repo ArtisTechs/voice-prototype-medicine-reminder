@@ -271,6 +271,11 @@ model Scan {
   result              Json
   // Expiry date Gemini read from the package. Information only; the answer uses the stored date.
   readExpiry          String?   @map("read_expiry") @db.VarChar(10)
+  // Name and strength Gemini read from the package; the add-medicine screen can fill itself from them.
+  readName            String?   @map("read_name") @db.VarChar(120)
+  readStrength        String?   @map("read_strength") @db.VarChar(40)
+  // true when the name / match came from how the package looks (a guess), not from printed text.
+  guessed             Boolean   @default(false)
   timings             Json
   durationMs          Int       @map("duration_ms")
   createdAt           DateTime  @default(now()) @map("created_at")

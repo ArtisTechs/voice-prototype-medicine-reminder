@@ -41,14 +41,18 @@ describe('fuzzyMatch', () => {
 describe('parseRead', () => {
   it('accepts the schema', () => {
     expect(parseRead('{"medicineId":3,"readName":"X","readStrength":"5mg","readExpiry":"2027-06-30","confidence":0.8}')).toEqual({
-      medicineId: 3, readName: 'X', readStrength: '5mg', readExpiry: '2027-06-30', confidence: 0.8,
+      medicineId: 3, readName: 'X', readStrength: '5mg', readExpiry: '2027-06-30', confidence: 0.8, source: 'printed',
     });
   });
 
   it('cleans up odd values instead of trusting them', () => {
     expect(parseRead('{"medicineId":"3","readName":5,"readExpiry":"June 2027","confidence":7}')).toEqual({
-      medicineId: null, readName: '', readStrength: '', readExpiry: null, confidence: 1,
+      medicineId: null, readName: '', readStrength: '', readExpiry: null, confidence: 1, source: 'printed',
     });
+  });
+
+  it('keeps track of a guess from the look of the package', () => {
+    expect(parseRead('{"medicineId":null,"readName":"Biogesic","readStrength":"","readExpiry":null,"confidence":0.7,"source":"appearance"}').source).toBe('appearance');
   });
 
   it('rejects text that is not JSON', () => {

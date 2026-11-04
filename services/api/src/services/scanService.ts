@@ -5,6 +5,7 @@ import { settings } from '../core/config';
 import { notFound, unsupportedMedia } from '../core/errors';
 import { getLogger } from '../core/logger';
 import { prisma } from '../core/prisma';
+import { redis } from '../core/redis';
 import * as storage from '../core/storage';
 import { fit } from '../core/text';
 import { utcnow } from '../core/timeutil';
@@ -35,6 +36,26 @@ export function scanAnswer(med: Medicine): ScanFound {
     low: med.qty <= med.lowStockThreshold,
     expired: deviceService.isExpired(med),
   };
+}
+
+// ---- "add a medicine by scanning it on the VOICE" -------------------------------------------------
+
+const LEARN_SECONDS = 180;
+const learnKey = (patientId: number) => `scan:learn:${patientId}`;
+
+/** The app is open on the add-medicine screen and waiting for the next scan from this person's VOICE. */
+export async function armLearn(patientId: number): Promise<void> {
+  await redis().set(learnKey(patientId), '1', 'EX', LEARN_SECONDS);
+}
+
+/** The first of these people who is waiting for a scan (fails open: no Redis means no learning). */
+async function learningPatient(patientIds: number[]): Promise<number | null> {
+  try {
+    for (const pid of patientIds) if (await redis().get(learnKey(pid))) return pid;
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 export function checkImage(data: Buffer | undefined, contentType: string | undefined): asserts data is Buffer {
@@ -73,6 +94,8 @@ export async function scan(deviceIdent: string | undefined, data: Buffer | undef
   const meds: Medicine[] = [];
   for (const pid of pids) meds.push(...(await medRepo.listForPatient(pid)));
 
+  const learning = await learningPatient(pids);
+
   // One scan at a time per box: a second press while one is running is answered "not found".
   const match = await withLock(`scan:${device.id}`, 15, async (got) => {
     if (!got) {
@@ -82,21 +105,22 @@ export async function scan(deviceIdent: string | undefined, data: Buffer | undef
     return vision.identify(
       data,
       meds.map((m) => ({ id: m.id, name: m.name, strength: m.strength, barcode: m.barcode })),
-      settings().SCAN_USE_REFERENCES ? { references: () => loadReferences(meds) } : {},
+      { learn: learning !== null, ...(settings().SCAN_USE_REFERENCES ? { references: () => loadReferences(meds) } : {}) },
     );
   });
 
   const med = meds.find((m) => m.id === match.medicineId);
   const answer: Record<string, unknown> = med ? { ...scanAnswer(med) } : { found: false };
-  const ownerId = med ? med.patientId : pids[0];
+  const ownerId = med ? med.patientId : learning ?? pids[0];
+  if (learning !== null) await redis().del(learnKey(learning)).catch(() => undefined);
 
   const row = await scanRepo.create({
     patientId: ownerId, deviceId: device.cameraId, imagePath: rel, found: !!med, method: match.method, score: match.score,
-    medicineId: med?.id ?? null, result: answer as object, readExpiry: match.readExpiry, timings: match.timings,
+    medicineId: med?.id ?? null, result: answer as object, readExpiry: match.readExpiry, readName: match.readName ?? null, readStrength: match.readStrength ?? null, guessed: !!match.guessed, timings: match.timings,
     durationMs: match.timings.total ?? 0, createdAt: now,
   });
   let created = new alertService.Created();
-  if (!med) {
+  if (!med && learning === null) {
     const patient = await patientRepo.byId(ownerId);
     if (patient) created = await alertService.scanUnknown(patient, row.id);
   }
@@ -104,6 +128,32 @@ export async function scan(deviceIdent: string | undefined, data: Buffer | undef
   await alertService.dispatch(created);
   log.info('scan_done', { scanId: row.id, method: match.method, score: match.score, reason: match.reason, ...Object.fromEntries(Object.entries(match.timings).map(([k, v]) => [`ms_${k}`, v])) });
   return answer;
+}
+
+// ---- read a package photo taken with the phone (add a medicine) ------------------------------------
+
+export interface PackageRead {
+  read: boolean;
+  name: string | null;
+  strength: string | null;
+  expiry: string | null;
+  /** The name is a guess from how the package looks, not printed text. */
+  guessed: boolean;
+  reason: string | null;
+}
+
+/** Same reader as the VOICE scan, for a photo from the caregiver's phone. The photo is not stored. */
+export async function readPackage(image: Buffer): Promise<PackageRead> {
+  if (!storage.isImage(image)) throw unsupportedMedia('Send a JPEG or PNG photo.');
+  let jpeg: Buffer;
+  try {
+    jpeg = await sharp(image).rotate().resize(1280, 1280, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+  } catch {
+    throw unsupportedMedia('That photo could not be read. Send a JPEG or PNG photo.');
+  }
+  const m = await vision.identify(jpeg, [], { learn: true });
+  const name = m.readName ?? null;
+  return { read: !!name, name, strength: m.readStrength ?? null, expiry: m.readExpiry, guessed: !!m.guessed && !!name, reason: name ? null : m.reason ?? 'no_match' };
 }
 
 // ---- review in the app -----------------------------------------------------------------------
@@ -120,6 +170,9 @@ export function scanOut(s: Scan, names: Map<number, string>) {
     correctedNone: s.correctedNone,
     correctedAt: s.correctedAt,
     ocrExpiry: s.readExpiry,
+    readName: s.readName,
+    readStrength: s.readStrength,
+    guessed: s.guessed,
     durationMs: s.durationMs,
     imageUrl: `/api/v1/patients/${s.patientId}/scans/${s.id}/image`,
     createdAt: s.createdAt,

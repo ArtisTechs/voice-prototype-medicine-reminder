@@ -42,6 +42,10 @@ const schema = z.object({
   SCAN_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.7),
   SCAN_FUZZY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.8),
   SCAN_USE_REFERENCES: bool(false),
+  // Let the AI suggest a product from how the package looks when it cannot read the name. Off = printed text only.
+  SCAN_GUESS_FROM_LOOKS: bool(true),
+  // A match made from looks alone (no readable name) needs at least this much confidence.
+  SCAN_MIN_CONFIDENCE_LOOKS: z.coerce.number().min(0).max(1).default(0.9),
 
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),

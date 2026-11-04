@@ -15,6 +15,8 @@ export interface VisionRead {
   readStrength: string;
   readExpiry: string | null;
   confidence: number;
+  /** printed = the name was read on the package; appearance = a guess from how the package looks (logo, colours, layout). */
+  source?: 'printed' | 'appearance';
 }
 
 export interface ReferencePhoto {
@@ -38,10 +40,13 @@ const SYSTEM = `You read the outside of a medicine package photographed by a pil
 You are given the only medicines that can be on this pillbox (JSON list with id, name, strength, barcode).
 Rules:
 - Answer medicineId only if the printed name (and strength, if printed) clearly matches ONE listed medicine.
-- If you are not sure, or the package is not in the list, answer medicineId null. Never guess. A similar-looking box is not a match.
-- readName / readStrength: copy what is printed on the package, even if it is not in the list. Use "" if unreadable.
+- ALWAYS try to read the printed text first. If the name is readable, source is "printed".
+- If the name is NOT readable (blurry, covered, back of the box) you may still recognise a specific, well-known product by its packaging (logo, brand colours, layout, shape). Then set source to "appearance" and put your best name in readName. Be honest: a generic or unfamiliar box gets readName "" and confidence 0.
+- If you are not sure, or the package is not in the list, answer medicineId null. A similar-looking box is not a match. Never invent a name.
+- readName / readStrength: copy what is printed on the package, even if it is not in the list. Use "" if you can neither read nor recognise it.
 - readExpiry: the expiry date as YYYY-MM-DD, or null. If only month and year are printed, use the last day of that month.
-- confidence: 0 to 1, how sure you are about medicineId (0 when medicineId is null).`;
+- confidence: 0 to 1, how sure you are about medicineId, or about readName when medicineId is null (0 when you have nothing). Printed text you can clearly read: high. A guess from appearance: never above 0.9.
+- source: "printed" or "appearance".`;
 
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -51,8 +56,9 @@ const RESPONSE_SCHEMA = {
     readStrength: { type: Type.STRING },
     readExpiry: { type: Type.STRING, nullable: true },
     confidence: { type: Type.NUMBER },
+    source: { type: Type.STRING, enum: ['printed', 'appearance'] },
   },
-  required: ['medicineId', 'readName', 'readStrength', 'readExpiry', 'confidence'],
+  required: ['medicineId', 'readName', 'readStrength', 'readExpiry', 'confidence', 'source'],
 };
 
 export function parseRead(text: string): VisionRead {
@@ -71,6 +77,7 @@ export function parseRead(text: string): VisionRead {
     readStrength: typeof raw.readStrength === 'string' ? raw.readStrength.slice(0, 40) : '',
     readExpiry: expiry,
     confidence: Number.isFinite(conf) ? Math.min(1, Math.max(0, conf)) : 0,
+    source: raw.source === 'appearance' ? 'appearance' : 'printed',
   };
 }
 
