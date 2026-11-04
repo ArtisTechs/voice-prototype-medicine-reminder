@@ -48,7 +48,7 @@ if ((Test-Path $envFile) -and ([IO.File]::ReadAllText($envFile) -notmatch '(?m)^
   $t = Set-EnvValue $t 'MYSQL_USER' 'medrem'
   $t = Set-EnvValue $t 'MYSQL_PASSWORD' (New-Secret 16)
   $t = Set-EnvValue $t 'MYSQL_ROOT_PASSWORD' (New-Secret 16)
-  $t = Set-EnvValue $t 'GEMINI_MODEL' 'gemini-2.5-flash'
+  $t = Set-EnvValue $t 'GEMINI_MODEL' 'gemini-3.5-flash'
   [IO.File]::WriteAllText($envFile, $t, $utf8)
   Write-Host 'Updated .env for MySQL. Add GEMINI_API_KEY (https://aistudio.google.com/apikey) to enable package scans.' -ForegroundColor Yellow
 }

@@ -5,7 +5,7 @@
  * The model only reads and suggests. Whether the match is accepted, and every field sent back to the
  * ESP32, is decided in code from the database (see pipeline.ts, scanService.ts).
  */
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { settings } from '../core/config';
 import type { Candidate } from './match';
 
@@ -61,6 +61,28 @@ const RESPONSE_SCHEMA = {
   required: ['medicineId', 'readName', 'readStrength', 'readExpiry', 'confidence', 'source'],
 };
 
+/** Packages print expiry as 06/2027, 2027-06, 30/06/2027 ...: turn what we can into YYYY-MM-DD (month only = last day of the month). */
+export function normaliseExpiry(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  const ymd = (y: number, m: number, d: number | null) => {
+    if (m < 1 || m > 12 || y < 2000 || y > 2100) return null;
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const day = d ?? last;
+    if (day < 1 || day > last) return null;
+    return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+  let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (m) return ymd(+m[1], +m[2], +m[3]);
+  m = /^(\d{4})[-/.](\d{1,2})$/.exec(t);
+  if (m) return ymd(+m[1], +m[2], null);
+  m = /^(\d{1,2})[-/.](\d{4})$/.exec(t);
+  if (m) return ymd(+m[2], +m[1], null);
+  m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(t); // day first (Philippines)
+  if (m) return ymd(+m[3], +m[2], +m[1]);
+  return null;
+}
+
 export function parseRead(text: string): VisionRead {
   let raw: Record<string, unknown>;
   try {
@@ -70,7 +92,7 @@ export function parseRead(text: string): VisionRead {
   }
   const id = raw.medicineId;
   const conf = Number(raw.confidence);
-  const expiry = typeof raw.readExpiry === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.readExpiry) ? raw.readExpiry : null;
+  const expiry = normaliseExpiry(raw.readExpiry);
   return {
     medicineId: typeof id === 'number' && Number.isInteger(id) ? id : null,
     readName: typeof raw.readName === 'string' ? raw.readName.slice(0, 120) : '',
@@ -117,9 +139,14 @@ export class GeminiClient implements VisionClient {
           responseMimeType: 'application/json',
           responseSchema: RESPONSE_SCHEMA,
           temperature: 0,
-          maxOutputTokens: 300,
-          // 2.5 Flash "thinks" by default; reading a label does not need it and it costs seconds.
-          ...(/2\.5.*flash/i.test(s.GEMINI_MODEL) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+          // Room for the JSON even if the model starts to think (a 300 token cap came back empty on Gemini 3).
+          maxOutputTokens: 800,
+          // Reading a label does not need thinking and it costs seconds: 2.5 takes a budget, 3.x a level.
+          ...(/2\.5/i.test(s.GEMINI_MODEL)
+            ? { thinkingConfig: { thinkingBudget: 0 } }
+            : /gemini-3/i.test(s.GEMINI_MODEL)
+              ? { thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } }
+              : {}),
           abortSignal: opts.signal,
         },
       });

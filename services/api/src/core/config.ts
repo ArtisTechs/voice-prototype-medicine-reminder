@@ -48,7 +48,7 @@ const schema = z.object({
   SCAN_MIN_CONFIDENCE_LOOKS: z.coerce.number().min(0).max(1).default(0.9),
 
   GEMINI_API_KEY: z.string().default(''),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
   GEMINI_TIMEOUT_MS: z.coerce.number().default(8000),
   // Free tier is rate limited per minute; stay under it instead of collecting 429s.
   GEMINI_MAX_PER_MINUTE: z.coerce.number().default(10),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRead } from '../../src/vision/gemini';
+import { normaliseExpiry, parseRead } from '../../src/vision/gemini';
 import { fuzzyMatch, similarity, type Candidate } from '../../src/vision/match';
 
 const C: Candidate[] = [
@@ -57,5 +57,21 @@ describe('parseRead', () => {
 
   it('rejects text that is not JSON', () => {
     expect(() => parseRead('Sure! It is Losartan')).toThrow();
+  });
+});
+
+describe('normaliseExpiry', () => {
+  it.each([
+    ['2027-06-30', '2027-06-30'],
+    ['06/2027', '2027-06-30'],
+    ['02/2028', '2028-02-29'],
+    ['2027-06', '2027-06-30'],
+    ['30/06/2027', '2027-06-30'],
+  ])('%s -> %s', (input, expected) => {
+    expect(normaliseExpiry(input)).toBe(expected);
+  });
+
+  it.each(['June 2027', '13/2027', '31/02/2027', '', 5, null])('rejects %s', (input) => {
+    expect(normaliseExpiry(input)).toBeNull();
   });
 });

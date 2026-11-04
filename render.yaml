@@ -51,7 +51,7 @@ services:
       - key: DEVICE_TZ
         value: Asia/Manila
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.5-flash
       - key: GEMINI_MAX_PER_MINUTE
         value: "10"
       - key: CORS_ORIGINS
