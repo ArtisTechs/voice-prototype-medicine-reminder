@@ -1,7 +1,7 @@
 import type { ExpoConfig } from 'expo/config';
 
 // EXPO_PUBLIC_* values are read at bundle time (docker-compose passes them from .env).
-const projectId = process.env.EXPO_PUBLIC_EXPO_PROJECT_ID || undefined;
+const projectId = process.env.EXPO_PUBLIC_EXPO_PROJECT_ID || '9d4a8130-8205-4a2d-8997-c0d68248e7da';
 
 // Brand colour of the VOICE logo (tools/icons/make_icons.mjs draws every icon from tools/icons/logo-source.png).
 const BRAND = '#02547A';
