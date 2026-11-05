@@ -39,7 +39,7 @@ export class VisionError extends Error {
   }
 }
 
-const SYSTEM = `You read the outside of a medicine package photographed by a pillbox camera.
+export const SYSTEM = `You read the outside of a medicine package photographed by a pillbox camera.
 You are given the only medicines that can be on this pillbox (JSON list with id, name, strength, barcode).
 Rules:
 - Answer medicineId only if the printed name (and strength, if printed) clearly matches ONE listed medicine.
@@ -179,7 +179,7 @@ export class GeminiClient implements VisionClient {
 }
 
 /** Temporary or model-specific trouble: try another model. A timeout, a missing key or an unknown answer shape is not. */
-function worthTryingNextModel(err: VisionError): boolean {
+export function worthTryingNextModel(err: VisionError): boolean {
   if (err.reason === 'rate_limited' || err.reason === 'daily_limit' || err.reason === 'bad_response' || err.reason === 'timeout') return true;
   if (err.reason !== 'error') return false;
   return /\b(500|502|503|504|404|400)\b|UNAVAILABLE|INTERNAL|NOT_FOUND/i.test(err.message);

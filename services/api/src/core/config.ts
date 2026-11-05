@@ -57,6 +57,15 @@ const schema = z.object({
   // Free tier is rate limited per minute; stay under it instead of collecting 429s.
   GEMINI_MAX_PER_MINUTE: z.coerce.number().default(10),
 
+  // Other AI providers tried after Gemini when it is out of quota or down (each is used only when its key is set).
+  GROQ_API_KEY: z.string().default(''),
+  GROQ_MODEL: z.string().default('qwen/qwen3.8-27b'),
+  CLOUDFLARE_ACCOUNT_ID: z.string().default(''),
+  CLOUDFLARE_API_TOKEN: z.string().default(''),
+  CLOUDFLARE_MODEL: z.string().default('@cf/meta/llama-4-scout-17b-16e-instruct'),
+  // When another provider is configured, all of Gemini's models together get this long before it is tried (ms).
+  VISION_PRIMARY_MS: z.coerce.number().default(5500),
+
   EXPO_PUSH_ENABLED: bool(true),
   EXPO_ACCESS_TOKEN: z.string().default(''),
   EXPO_PUSH_URL: z.string().default('https://exp.host/--/api/v2/push/send'),

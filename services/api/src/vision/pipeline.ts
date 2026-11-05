@@ -6,15 +6,17 @@ import { settings } from '../core/config';
 import { getLogger } from '../core/logger';
 import { redis } from '../core/redis';
 import { GeminiClient, VisionError, type FailureReason, type ReferencePhoto, type VisionClient } from './gemini';
+import { ChainClient } from './openaiCompat';
 import { fuzzyMatch, type Candidate } from './match';
 
 const log = getLogger('vision');
 
-let client: VisionClient = new GeminiClient();
+const defaultClient = (): VisionClient => new ChainClient(new GeminiClient());
+let client: VisionClient = defaultClient();
 
 /** Tests swap in a fake; production uses Gemini. */
 export function setVisionClient(c: VisionClient | null): void {
-  client = c ?? new GeminiClient();
+  client = c ?? defaultClient();
 }
 
 export interface Match {
