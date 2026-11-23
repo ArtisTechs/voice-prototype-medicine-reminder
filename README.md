@@ -1,4 +1,4 @@
-# VOICE: medicine reminder prototype
+# MIRA: medicine reminder prototype
 
 This repo is the backend and caregiver app for an ESP32 pillbox:
 - **The pillbox** reminds the patient at dose time.
@@ -42,10 +42,10 @@ Everything runs in Docker, so a new laptop needs only these tools. You don't nee
    - On the phone: **Expo Go** from the Play Store or App Store.
 2. **Get the code** (`git clone <repo-url> medicine-reminder`, or copy the project folder).
 3. **Open the firewall:** double-click **`setup-voice.cmd`** and click *Yes* when Windows asks for admin. It opens ports 5055 (API) and 8081 (app) on every network type, including phone hotspots.
-4. **Turn on the Windows Mobile hotspot** for the VOICE device (Settings → Network & internet → Mobile hotspot):
+4. **Turn on the Windows Mobile hotspot** for the MIRA device (Settings → Network & internet → Mobile hotspot):
    - *Share my internet connection from:* **Wi-Fi** (the laptop stays on the phone hotspot for internet).
-   - *Network name / password:* the Wi-Fi name and password flashed into VOICE.
-   - The laptop's address on its own hotspot is **always `192.168.137.1`** on every Windows laptop, so VOICE is flashed once with `BACKEND_URL "http://192.168.137.1:5055"` and works with any laptop that runs this repo.
+   - *Network name / password:* the Wi-Fi name and password flashed into MIRA.
+   - The laptop's address on its own hotspot is **always `192.168.137.1`** on every Windows laptop, so MIRA is flashed once with `BACKEND_URL "http://192.168.137.1:5055"` and works with any laptop that runs this repo.
    - If the Wi-Fi card can't share Wi-Fi over Wi-Fi, connect the phone by USB and turn on **USB tethering** instead, then share that connection.
 
 You don't edit `.env`: the first start creates it with random secrets.
@@ -53,8 +53,8 @@ You don't edit `.env`: the first start creates it with random secrets.
 ### How the pieces connect
 
 ```
- phone (hotspot, internet) ──Wi-Fi──► laptop ◄──Wi-Fi── VOICE device
-   runs the VOICE app        detected IP  │  192.168.137.1 (fixed)
+ phone (hotspot, internet) ──Wi-Fi──► laptop ◄──Wi-Fi── MIRA device
+   runs the MIRA app        detected IP  │  192.168.137.1 (fixed)
                                           └─ Docker: API :5055, app server :8081
 ```
 
@@ -69,7 +69,7 @@ Double-click **`start-voice.cmd`** (or run `.\start-voice.cmd` in PowerShell). I
 ```
 Phone app (Expo Go):  exp://172.20.10.3:8081
 API for the app:      http://172.20.10.3:5055   (docs: /docs)
-VOICE device URL:     http://192.168.137.1:5055   (hotspot is on)
+MIRA device URL:     http://192.168.137.1:5055   (hotspot is on)
 ```
 
 Then:
@@ -93,7 +93,7 @@ Other commands:
 
 **If something doesn't work:**
 - **Phone can't connect:** run `setup-voice.cmd` once, then `start-voice.cmd` again. The address in Expo Go must match what `start-voice.cmd` printed; it changes when the phone hotspot restarts.
-- **VOICE device shows Offline:** check that the Windows Mobile hotspot is on and that VOICE joined it (Settings → Mobile hotspot lists connected devices).
+- **MIRA device shows Offline:** check that the Windows Mobile hotspot is on and that MIRA joined it (Settings → Mobile hotspot lists connected devices).
 - **"Port is already allocated" for 5055:** another program is using it. Stop it. For testing without the device, you can set `API_PORT=5056` in `.env` instead.
 - **Scans always say "not found":** `GEMINI_API_KEY` is empty in `.env` (get a free key at https://aistudio.google.com/apikey, then `docker compose restart api`). Everything else works without it.
 

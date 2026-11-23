@@ -24,8 +24,8 @@ const PREFS: { key: keyof NotifyPrefs; label: string; description: string }[] = 
   { key: 'lowStock', label: 'Running low', description: 'When it is time to refill.' },
   { key: 'expiry', label: 'Expiry dates', description: '30 days, 7 days and on the day a medicine expires.' },
   { key: 'expiredDose', label: 'Expired medicine due', description: 'When a dose is due but the medicine has expired.' },
-  { key: 'offline', label: 'VOICE offline', description: 'When VOICE has not checked in for 10 minutes.' },
-  { key: 'scanUnknown', label: 'Unknown scans', description: 'When the VOICE camera does not recognise a box.' },
+  { key: 'offline', label: 'MIRA offline', description: 'When MIRA has not checked in for 10 minutes.' },
+  { key: 'scanUnknown', label: 'Unknown scans', description: 'When the MIRA camera does not recognise a box.' },
   { key: 'hideMedicineNames', label: 'Hide medicine names', description: 'Lock-screen alerts say “a medicine” instead.' },
 ];
 
@@ -125,7 +125,7 @@ export default function Settings() {
       <Card>
         <ChoiceGroup<string>
           label="Time zone"
-          helper="Times in the app are shown in this zone. VOICE always uses Philippine time."
+          helper="Times in the app are shown in this zone. MIRA always uses Philippine time."
           value={me.data.timezone}
           onChange={(tz) => save({ timezone: tz })}
           choices={ZONES.some((z) => z.value === me.data.timezone) ? ZONES : [...ZONES, { value: me.data.timezone, label: me.data.timezone }]}
@@ -145,7 +145,7 @@ export default function Settings() {
       <Card>
         <AppText variant="title">Privacy</AppText>
         <AppText>
-          We keep only what is needed: a name for each person, their medicines and dose history. VOICE camera photos are deleted
+          We keep only what is needed: a name for each person, their medicines and dose history. MIRA camera photos are deleted
           after 30 days.
         </AppText>
         <AppText muted>

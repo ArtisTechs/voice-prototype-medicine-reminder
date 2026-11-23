@@ -3,7 +3,7 @@ name: product-spec
 description: Use when you need to know what the product must do. Covers the users, the glossary (dose, slot, schedule, intake event, inventory, refill, caregiver, patient, device), and every caregiver-app feature with acceptance criteria. Load before building or changing any user-facing feature, or when unsure what a term means.
 ---
 
-# Product spec: VOICE prototype
+# Product spec: MIRA prototype
 
 ## Users
 - **Caregiver:** a family member or helper who sets up the pillbox and is told when something goes wrong. Often not technical, sometimes older. Uses the mobile app.

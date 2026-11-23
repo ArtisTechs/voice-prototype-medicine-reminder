@@ -38,7 +38,7 @@ export function EmptyState({ icon = 'leaf-outline', title, message, actionLabel,
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.code === 'network') return "We couldn't reach the VOICE server. Check your internet, then try again. It can take a minute to wake up.";
+    if (error.code === 'network') return "We couldn't reach the MIRA server. Check your internet, then try again. It can take a minute to wake up.";
     return error.message;
   }
   return 'Something went wrong.';

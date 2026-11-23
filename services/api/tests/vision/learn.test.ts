@@ -1,4 +1,4 @@
-/** "Add a medicine by scanning it on the VOICE": the app arms a wait, the next scan is read, nothing else changes. */
+/** "Add a medicine by scanning it on the MIRA": the app arms a wait, the next scan is read, nothing else changes. */
 import { describe, expect, it } from 'vitest';
 import { prisma } from '../../src/core/prisma';
 import { api, auth, jpeg, makePatient, makeUser, nothing, pairDevice, visionClient } from '../helpers';

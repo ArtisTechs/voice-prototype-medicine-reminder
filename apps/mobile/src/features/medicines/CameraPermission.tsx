@@ -27,7 +27,7 @@ export function CameraPermissionNotice({ reason, canAskAgain, onAllow }: { reaso
         <Button title="Allow camera" icon="camera" onPress={onAllow} />
       ) : (
         <>
-          <AppText muted>The camera is turned off for VOICE. Turn it on in your phone's settings, then come back here.</AppText>
+          <AppText muted>The camera is turned off for MIRA. Turn it on in your phone's settings, then come back here.</AppText>
           <Button title="Open phone settings" icon="settings" onPress={() => Linking.openSettings()} />
         </>
       )}

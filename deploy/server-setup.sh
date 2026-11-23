@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Set up (or update) VOICE on a fresh Ubuntu 24.04 server: Google Cloud VM or any VPS.
+# Set up (or update) MIRA on a fresh Ubuntu 24.04 server: Google Cloud VM or any VPS.
 # Run from the cloned repo:   bash deploy/server-setup.sh          (add --demo once for the demo account)
 # Safe to re-run after `git pull`: .env and the database are kept.
 set -euo pipefail
@@ -44,7 +44,7 @@ fi
 get_env() { grep "^$1=" .env | cut -d= -f2-; }
 
 # 4. Start (first build: a few minutes)
-echo "== Building and starting VOICE"
+echo "== Building and starting MIRA"
 "${COMPOSE[@]}" up -d --build
 
 echo "== Waiting for the API"
@@ -61,10 +61,10 @@ fi
 IP=$(get_env LAN_IP)
 cat <<EOF
 
-================ VOICE is running ================
+================ MIRA is running ================
 App API (EXPO_PUBLIC_API_URL):  https://$(get_env APP_DOMAIN)
 Check in a browser:             https://$(get_env APP_DOMAIN)/healthz
-VOICE device BACKEND_URL:       http://$IP:5055/d/$(get_env DEVICE_PATH_SECRET)
+MIRA device BACKEND_URL:       http://$IP:5055/d/$(get_env DEVICE_PATH_SECRET)
 Keep the device URL private: it is the device's password.
 Logs: ${COMPOSE[*]} logs -f api
 EOF

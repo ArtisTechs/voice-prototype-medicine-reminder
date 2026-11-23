@@ -77,7 +77,7 @@ sequenceDiagram
 erDiagram
   users ||--o{ patient_caregivers : "looks after"
   patients ||--o{ patient_caregivers : ""
-  devices ||--o{ patients : "one VOICE, several people"
+  devices ||--o{ patients : "one MIRA, several people"
   patients ||--o{ medicines : ""
   medicines ||--o{ schedules : "dose times (id = device dose id)"
   medicines ||--o{ reference_images : "photos of the package"
@@ -90,7 +90,7 @@ erDiagram
   patients ||--o{ invites : "6-char codes"
 ```
 
-Key constraints: `device_events (device_id, type, dose_id, local_time)` unique (idempotency), `intake_records (schedule_id, dose_date)` unique, `alerts (user_id, dedup_key)` unique. "One active medicine per slot per VOICE" is checked in the services (MySQL has no partial indexes, D24).
+Key constraints: `device_events (device_id, type, dose_id, local_time)` unique (idempotency), `intake_records (schedule_id, dose_date)` unique, `alerts (user_id, dedup_key)` unique. "One active medicine per slot per MIRA" is checked in the services (MySQL has no partial indexes, D24).
 
 ## Time
 

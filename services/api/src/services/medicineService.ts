@@ -57,7 +57,7 @@ async function checkSlot(patientId: number, slot: number | null | undefined, exc
   const holder = await medRepo.bySlot(await deviceRepo.sharingIds(patientId), slot, exclude);
   if (!holder) return;
   if (holder.patientId !== patientId) {
-    throw conflict('slot_taken', `Slot ${slot} on this VOICE is used by another person. Choose another slot.`);
+    throw conflict('slot_taken', `Slot ${slot} on this MIRA is used by another person. Choose another slot.`);
   }
   throw conflict('slot_taken', `Slot ${slot} already has a medicine. Choose another slot or empty it first.`);
 }

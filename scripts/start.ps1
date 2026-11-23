@@ -1,10 +1,10 @@
 <#
-  Start VOICE on this laptop with no manual .env editing.
+  Start MIRA on this laptop with no manual .env editing.
 
   - First run: creates .env from .env.example with random secrets.
   - Every run: detects this laptop's IP for the phone app, writes LAN_IP into .env,
     starts the Docker stack and prints the addresses to use.
-  - VOICE (ESP32) always uses the Windows Mobile hotspot address http://192.168.137.1:5055,
+  - MIRA (ESP32) always uses the Windows Mobile hotspot address http://192.168.137.1:5055,
     which is the same on every Windows laptop, so the firmware is flashed once.
 
   Usage (from the repo root):  .\start-voice.cmd            phone app reaches the laptop over the phone hotspot
@@ -84,16 +84,16 @@ for ($i = 0; $i -lt 90 -and -not $ok; $i++) {
 }
 
 Write-Host ''
-Write-Host '================ VOICE is running ================' -ForegroundColor Green
+Write-Host '================ MIRA is running ================' -ForegroundColor Green
 if (-not $ok) { Write-Host 'The API is still starting (first run can take a while). Check: docker compose ps' -ForegroundColor Yellow }
 Write-Host "Phone app (Expo Go):  exp://${appIp}:8081"
 Write-Host "API for the app:      http://${appIp}:$port   (docs: /docs)"
 if ($hotspotOn) {
-  Write-Host "VOICE device URL:     http://${hotspotIp}:$port   (hotspot is on)"
+  Write-Host "MIRA device URL:     http://${hotspotIp}:$port   (hotspot is on)"
 } else {
-  Write-Host "VOICE device URL:     http://${hotspotIp}:$port   - turn on Windows Mobile hotspot so VOICE can connect" -ForegroundColor Yellow
+  Write-Host "MIRA device URL:     http://${hotspotIp}:$port   - turn on Windows Mobile hotspot so MIRA can connect" -ForegroundColor Yellow
 }
-if ($port -ne '5055') { Write-Host "Note: API_PORT=$port in .env. The VOICE device firmware needs 5055." -ForegroundColor Yellow }
-$rules = Get-NetFirewallRule -DisplayName 'VOICE*' -ErrorAction SilentlyContinue
+if ($port -ne '5055') { Write-Host "Note: API_PORT=$port in .env. The MIRA device firmware needs 5055." -ForegroundColor Yellow }
+$rules = Get-NetFirewallRule -DisplayName 'MIRA*' -ErrorAction SilentlyContinue
 if (-not $rules) { Write-Host 'Firewall not opened yet: run setup-voice.cmd once (it asks for admin).' -ForegroundColor Yellow }
 Write-Host 'Sign in: demo@example.com / demo1234     QR code: docker compose logs -f mobile'

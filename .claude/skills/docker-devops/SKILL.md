@@ -41,7 +41,7 @@ Stages: `base` (node:22.21.1-bookworm-slim + openssl, user `app` uid 10001) → 
 ## LAN reachability on Windows
 1. `ipconfig` → Wi-Fi IPv4 (e.g. 192.168.1.20) → `LAN_IP` in `.env`.
 2. Docker Desktop publishes on all interfaces (`0.0.0.0:5055`).
-3. Firewall (admin PowerShell): `New-NetFirewallRule -DisplayName "VOICE API 5055" -Direction Inbound -Protocol TCP -LocalPort 5055 -Action Allow -Profile Private` (same for 8081), or run `setup-voice.cmd`. The WiFi profile must be **Private**.
+3. Firewall (admin PowerShell): `New-NetFirewallRule -DisplayName "MIRA API 5055" -Direction Inbound -Protocol TCP -LocalPort 5055 -Action Allow -Profile Private` (same for 8081), or run `setup-voice.cmd`. The WiFi profile must be **Private**.
 4. From the phone browser: `http://<LAN_IP>:5055/healthz`.
 5. ESP32: set `BACKEND_URL` to `http://<LAN_IP>:5055` in the main sketch. Reserve the PC's IP in the router so it does not change.
 

@@ -51,7 +51,7 @@ export function PatientCardView({ card }: { card: PatientCard }) {
           <AppText variant="title">{card.displayName}</AppText>
           <StatusBadge
             status={card.device ? (online ? 'online' : 'offline') : 'offline'}
-            label={!card.device ? 'No VOICE yet' : online ? 'VOICE online' : `Offline · ${ago(card.device.lastSeen)}`}
+            label={!card.device ? 'No MIRA yet' : online ? 'MIRA online' : `Offline · ${ago(card.device.lastSeen)}`}
           />
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.textMuted} />

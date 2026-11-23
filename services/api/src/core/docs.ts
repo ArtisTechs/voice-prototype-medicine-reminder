@@ -44,13 +44,13 @@ function build() {
   );
   return {
     openapi: '3.0.3',
-    info: { title: 'VOICE API', version: '1.0.0', description: 'App endpoints under /api/v1. The ESP32 paths are frozen by the firmware.' },
+    info: { title: 'MIRA API', version: '1.0.0', description: 'App endpoints under /api/v1. The ESP32 paths are frozen by the firmware.' },
     components: { securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
     paths,
   };
 }
 
-const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>VOICE API</title>
+const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>MIRA API</title>
 <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css"></head>
 <body><div id="ui"></div>
 <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>

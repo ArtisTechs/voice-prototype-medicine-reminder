@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# VOICE API + worker (same image, two commands). Stages: base -> deps -> build -> dev (tests, reload) -> runtime (prod).
+# MIRA API + worker (same image, two commands). Stages: base -> deps -> build -> dev (tests, reload) -> runtime (prod).
 # `runtime` is the LAST stage on purpose: hosts that cannot pick a build target (Render) build it by default.
 
 FROM node:22.21.1-bookworm-slim AS base

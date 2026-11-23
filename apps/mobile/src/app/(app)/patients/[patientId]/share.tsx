@@ -67,7 +67,7 @@ export default function ShareScreen() {
             <Button
               title="Send the code"
               icon="share-social"
-              onPress={() => Share.share({ message: `Join me in VOICE to help look after ${patient.data?.displayName}. Code: ${code}` })}
+              onPress={() => Share.share({ message: `Join me in MIRA to help look after ${patient.data?.displayName}. Code: ${code}` })}
             />
           </>
         ) : (

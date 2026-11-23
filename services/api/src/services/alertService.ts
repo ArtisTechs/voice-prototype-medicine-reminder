@@ -161,14 +161,14 @@ export async function expiry(patient: Patient, med: Medicine, today: string, db:
 
 export const offline = (patient: Patient, deviceId: string, lastSeenEpoch: number, since: string, db?: Db) =>
   raiseAlert(
-    patient, 'offline', `offline:${deviceId}:${lastSeenEpoch}`, 'VOICE is offline',
-    `${patient.displayName}'s VOICE has not checked in since ${since}. Check its power and WiFi.`, { deviceId }, undefined, db,
+    patient, 'offline', `offline:${deviceId}:${lastSeenEpoch}`, 'MIRA is offline',
+    `${patient.displayName}'s MIRA has not checked in since ${since}. Check its power and WiFi.`, { deviceId }, undefined, db,
   );
 
 export const scanUnknown = (patient: Patient, scanId: number, db?: Db) =>
   raiseAlert(
     patient, 'scan_unknown', `scan:${scanId}`, 'Unknown medicine scanned',
-    `The VOICE camera could not recognise a package for ${patient.displayName}. Tap to review.`,
+    `The MIRA camera could not recognise a package for ${patient.displayName}. Tap to review.`,
     { scanId, url: `/patients/${patient.id}/scans` }, undefined, db,
   );
 

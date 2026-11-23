@@ -3,11 +3,11 @@ import type { ExpoConfig } from 'expo/config';
 // EXPO_PUBLIC_* values are read at bundle time (docker-compose passes them from .env).
 const projectId = process.env.EXPO_PUBLIC_EXPO_PROJECT_ID || '9d4a8130-8205-4a2d-8997-c0d68248e7da';
 
-// Brand colour of the VOICE logo (tools/icons/make_icons.mjs draws every icon from tools/icons/logo-source.png).
+// Brand colour of the MIRA logo (tools/icons/make_icons.mjs draws every icon from tools/icons/logo-source.png).
 const BRAND = '#02547A';
 
 const config: ExpoConfig = {
-  name: 'VOICE',
+  name: 'MIRA',
   slug: 'medrem-caregiver',
   scheme: 'medrem',
   version: '1.0.0',
@@ -56,7 +56,7 @@ const config: ExpoConfig = {
     [
       'expo-camera',
       {
-        cameraPermission: 'Allow VOICE to use the camera to scan medicine barcodes and take package photos.',
+        cameraPermission: 'Allow MIRA to use the camera to scan medicine barcodes and take package photos.',
         microphonePermission: false, // photos and barcodes only: no microphone text in the iOS build
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,

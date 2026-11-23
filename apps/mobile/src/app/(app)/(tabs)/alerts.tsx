@@ -83,7 +83,7 @@ export default function Alerts() {
       ) : q.isError ? (
         <ErrorState error={q.error} onRetry={q.refetch} />
       ) : items.length === 0 ? (
-        <EmptyState icon="notifications-off-outline" title="No alerts" message="You will see missed doses, low stock and VOICE problems here." />
+        <EmptyState icon="notifications-off-outline" title="No alerts" message="You will see missed doses, low stock and MIRA problems here." />
       ) : (
         <>
           {unread > 0 ? (

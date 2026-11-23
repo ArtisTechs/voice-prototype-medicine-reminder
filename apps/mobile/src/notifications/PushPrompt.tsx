@@ -30,7 +30,7 @@ export function PushPrompt() {
     <Card>
       <AppText variant="title">Get alerts on this phone</AppText>
       <AppText>
-        Turn on notifications so you hear right away when a dose is missed, medicine runs low, or VOICE goes
+        Turn on notifications so you hear right away when a dose is missed, medicine runs low, or MIRA goes
         offline.
       </AppText>
       {state === 'denied' ? (

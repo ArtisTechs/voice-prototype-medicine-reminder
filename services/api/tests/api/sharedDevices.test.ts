@@ -1,12 +1,12 @@
-/** One VOICE serving several people, moving between VOICEs, and auto-detecting unpaired ones. */
+/** One MIRA serving several people, moving between MIRAs, and auto-detecting unpaired ones. */
 import { describe, expect, it } from 'vitest';
 import { prisma } from '../../src/core/prisma';
 import { api, auth, makeMedicine, makePatient, makeSchedule, makeUser, pairDevice } from '../helpers';
 
 const schedule = (device = 'pillbox') => api().get('/api/schedule').query({ device });
 
-describe('shared VOICE', () => {
-  it('two people share one VOICE', async () => {
+describe('shared MIRA', () => {
+  it('two people share one MIRA', async () => {
     const a = await makeUser();
     const b = await makeUser();
     const pa = await makePatient(a, 'owner', { displayName: 'Lola Rosa' });
@@ -54,7 +54,7 @@ describe('shared VOICE', () => {
     expect((await prisma.deviceEvent.findFirst({ where: { type: 'opened' } }))!.patientId).toBe(pb.id);
   });
 
-  it('joining a VOICE with a clashing slot is refused with 409 slot_taken', async () => {
+  it('joining a MIRA with a clashing slot is refused with 409 slot_taken', async () => {
     const user = await makeUser();
     const pa = await makePatient(user);
     const pb = await makePatient(user, 'owner', { displayName: 'Lolo Ben' });
@@ -67,7 +67,7 @@ describe('shared VOICE', () => {
     expect(r.body.error.message).toContain('Slot 3');
   });
 
-  it("a medicine cannot take a slot another person uses on the same VOICE", async () => {
+  it("a medicine cannot take a slot another person uses on the same MIRA", async () => {
     const user = await makeUser();
     const pa = await makePatient(user);
     const pb = await makePatient(user);
@@ -79,7 +79,7 @@ describe('shared VOICE', () => {
     expect(r.body.error.message).toContain('another person');
   });
 
-  it('unpairing one person keeps the VOICE for the others; the last one deletes it', async () => {
+  it('unpairing one person keeps the MIRA for the others; the last one deletes it', async () => {
     const user = await makeUser();
     const pa = await makePatient(user);
     const pb = await makePatient(user);
@@ -94,7 +94,7 @@ describe('shared VOICE', () => {
     expect((await schedule()).status).toBe(403);
   });
 
-  it('moving to another VOICE leaves the old one, which is deleted when empty', async () => {
+  it('moving to another MIRA leaves the old one, which is deleted when empty', async () => {
     const user = await makeUser();
     const patient = await makePatient(user);
     await pairDevice(patient, 'pillbox');
@@ -105,7 +105,7 @@ describe('shared VOICE', () => {
     expect((await prisma.patient.findUnique({ where: { id: patient.id } }))!.deviceId).not.toBeNull();
   });
 
-  it('an unpaired VOICE that polls is detected, then paired', async () => {
+  it('an unpaired MIRA that polls is detected, then paired', async () => {
     const user = await makeUser();
     const patient = await makePatient(user);
     const h = auth(user);
@@ -118,7 +118,7 @@ describe('shared VOICE', () => {
     expect((await schedule('voice-7')).status).toBe(200);
   });
 
-  it("lists a VOICE someone else uses only while it is online", async () => {
+  it("lists a MIRA someone else uses only while it is online", async () => {
     const a = await makeUser();
     const b = await makeUser();
     await pairDevice(await makePatient(a));

@@ -19,7 +19,7 @@ const POLL_MS = 2000;
 const GIVE_UP_MS = 170_000; // the server waits 3 minutes
 
 /**
- * Add a medicine by scanning it on the VOICE: asks the server to read the next package the person's VOICE sees,
+ * Add a medicine by scanning it on the MIRA: asks the server to read the next package the person's MIRA sees,
  * then waits for that scan to appear and hands back what was printed on the box.
  */
 export function VoiceScanSheet({ visible, patientId, onClose, onRead }: { visible: boolean; patientId: number; onClose: () => void; onRead: (r: PackageRead) => void }) {
@@ -88,7 +88,7 @@ export function VoiceScanSheet({ visible, patientId, onClose, onRead }: { visibl
   const failed = phase !== 'waiting';
 
   return (
-    <Sheet visible={visible} title="Scan with VOICE" onClose={onClose}>
+    <Sheet visible={visible} title="Scan with MIRA" onClose={onClose}>
       <View style={styles.center} accessibilityLiveRegion="polite">
         {failed ? (
           <Ionicons name={phase === 'error' ? 'alert-circle' : 'help-circle'} size={56} color={colors.danger} />
@@ -96,14 +96,14 @@ export function VoiceScanSheet({ visible, patientId, onClose, onRead }: { visibl
           <ActivityIndicator size="large" color={colors.primary} />
         )}
         <AppText variant="title" style={styles.text}>
-          {phase === 'waiting' && 'Waiting for your VOICE…'}
-          {phase === 'unreadable' && "VOICE couldn't read that box"}
-          {phase === 'timeout' && 'Nothing came from your VOICE'}
+          {phase === 'waiting' && 'Waiting for your MIRA…'}
+          {phase === 'unreadable' && "MIRA couldn't read that box"}
+          {phase === 'timeout' && 'Nothing came from your MIRA'}
           {phase === 'error' && "We couldn't start"}
         </AppText>
         {phase === 'waiting' ? (
           <AppText muted style={styles.text}>
-            1. Hold the medicine box in front of the VOICE camera.{'\n'}2. Press the scan button on the VOICE.
+            1. Hold the medicine box in front of the MIRA camera.{'\n'}2. Press the scan button on the MIRA.
           </AppText>
         ) : null}
         {phase === 'unreadable' ? (
@@ -113,7 +113,7 @@ export function VoiceScanSheet({ visible, patientId, onClose, onRead }: { visibl
         ) : null}
         {phase === 'timeout' ? (
           <AppText muted style={styles.text}>
-            Check that the VOICE is on and connected to WiFi, then try again.
+            Check that the MIRA is on and connected to WiFi, then try again.
           </AppText>
         ) : null}
         {phase === 'error' ? (

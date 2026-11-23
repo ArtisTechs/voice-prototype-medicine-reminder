@@ -1,4 +1,4 @@
-// Builds every app icon from tools/icons/logo-source.png (the VOICE logo).
+// Builds every app icon from tools/icons/logo-source.png (the MIRA logo).
 //   node tools/icons/make_icons.mjs        (needs `sharp`; it is installed in services/api)
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';

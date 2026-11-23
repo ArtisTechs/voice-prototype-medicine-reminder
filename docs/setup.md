@@ -7,7 +7,7 @@
 - On the phone: **Expo Go** from the Play Store or App Store (it must support Expo SDK 58).
 
 ## 2. Find this PC's LAN IP
-**Easiest: run `start-voice.cmd`.** It detects the IP, writes `LAN_IP` into `.env` (creating `.env` with random secrets on the first run) and starts the stack. `setup-voice.cmd` opens the firewall once. For the VOICE device, use the Windows Mobile hotspot: its address is always `192.168.137.1`, so the firmware never needs a laptop-specific IP (see the README, D-entry "Fixed device address").
+**Easiest: run `start-voice.cmd`.** It detects the IP, writes `LAN_IP` into `.env` (creating `.env` with random secrets on the first run) and starts the stack. `setup-voice.cmd` opens the firewall once. For the MIRA device, use the Windows Mobile hotspot: its address is always `192.168.137.1`, so the firmware never needs a laptop-specific IP (see the README, D-entry "Fixed device address").
 
 Manual way: `ipconfig` → section **Wireless LAN adapter Wi-Fi** → **IPv4 Address**, e.g. `192.168.0.215`. Do not use the `vEthernet (WSL)` address.
 
@@ -27,8 +27,8 @@ Edit `.env`:
 ## 4. Open the firewall (PowerShell as Administrator)
 The WiFi network must use the **Private** profile (Settings → Network → Wi-Fi → your network → Private).
 ```powershell
-New-NetFirewallRule -DisplayName "VOICE API 5055"  -Direction Inbound -Protocol TCP -LocalPort 5055 -Action Allow -Profile Private
-New-NetFirewallRule -DisplayName "VOICE Expo 8081" -Direction Inbound -Protocol TCP -LocalPort 8081 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "MIRA API 5055"  -Direction Inbound -Protocol TCP -LocalPort 5055 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "MIRA Expo 8081" -Direction Inbound -Protocol TCP -LocalPort 8081 -Action Allow -Profile Private
 ```
 
 ## 5. Start

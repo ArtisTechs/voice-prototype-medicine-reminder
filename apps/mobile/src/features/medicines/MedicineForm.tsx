@@ -22,7 +22,7 @@ const FORM_LABEL: Record<(typeof FORMS)[number], string> = { tablet: 'Tablet', c
 
 type Props = {
   medicine?: Medicine;
-  /** When set on a new medicine, the form can also be filled by scanning the box on this person's VOICE. */
+  /** When set on a new medicine, the form can also be filled by scanning the box on this person's MIRA. */
   patientId?: number;
   /** Other active medicines of this patient, to show which slots are used. */
   others: Medicine[];
@@ -49,7 +49,7 @@ export function MedicineForm({ medicine, patientId, others, submitLabel, onSubmi
   const unit = UNIT_FOR_FORM[form];
   const usedBy = new Map(others.filter((m) => m.slot && m.id !== medicine?.id).map((m) => [m.slot as number, m.label]));
 
-  /** Fill the form from what was read on a box (VOICE or phone photo). A guess is labelled as one. */
+  /** Fill the form from what was read on a box (MIRA or phone photo). A guess is labelled as one. */
   const applyRead = (r: PackageRead) => {
     const opts = { shouldValidate: true, shouldDirty: true };
     setValue('name', r.name, opts);
@@ -78,7 +78,7 @@ export function MedicineForm({ medicine, patientId, others, submitLabel, onSubmi
       {!medicine ? (
         <View style={styles.gap}>
           <AppText variant="title">Scan it to fill this in</AppText>
-          {canScanWithVoice ? <Button title="Scan the box with VOICE" icon="scan" onPress={() => setVoiceScan(true)} /> : null}
+          {canScanWithVoice ? <Button title="Scan the box with MIRA" icon="scan" onPress={() => setVoiceScan(true)} /> : null}
           {patientId ? <Button title="Take a photo of the box" icon="camera" variant="secondary" onPress={() => setCameraOpen(true)} /> : null}
           <Button title="Scan the barcode with this phone" icon="barcode" variant="secondary" onPress={() => setScanning(true)} />
           <AppText muted>Or fill in the details below by hand.</AppText>
@@ -100,15 +100,15 @@ export function MedicineForm({ medicine, patientId, others, submitLabel, onSubmi
         )}
       />
       <FormNumberField control={control} name="doseAmount" label="How much per dose" unit={`${unit}(s)`} />
-      <FormTextField control={control} name="instructions" label="Instructions (optional)" helper='Short, e.g. "After breakfast". VOICE shows the first 39 letters.' multiline />
+      <FormTextField control={control} name="instructions" label="Instructions (optional)" helper='Short, e.g. "After breakfast". MIRA shows the first 39 letters.' multiline />
 
       <Controller
         control={control}
         name="slot"
         render={({ field, fieldState }) => (
           <ChoiceGroup<number | null>
-            label="VOICE slot"
-            helper="The compartment this medicine goes in. Without a slot VOICE will not remind."
+            label="MIRA slot"
+            helper="The compartment this medicine goes in. Without a slot MIRA will not remind."
             error={fieldState.error?.message}
             value={field.value}
             onChange={field.onChange}

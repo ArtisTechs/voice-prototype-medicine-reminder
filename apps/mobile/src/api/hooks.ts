@@ -46,7 +46,7 @@ export const useHistory = (id: number, from: string, to: string) =>
   useQuery({ queryKey: qk.history(id, from, to), queryFn: () => api<History>(`${p(id)}/history`, { query: { from, to } }) });
 export const useDevice = (id: number) =>
   useQuery({ queryKey: qk.device(id), queryFn: () => api<Device>(`${p(id)}/device`), retry: false });
-/** Polls while a pairing screen is open, so a VOICE that was just switched on shows up by itself. */
+/** Polls while a pairing screen is open, so a MIRA that was just switched on shows up by itself. */
 export const useNearbyDevices = (enabled = true) =>
   useQuery({
     queryKey: qk.nearbyDevices(),

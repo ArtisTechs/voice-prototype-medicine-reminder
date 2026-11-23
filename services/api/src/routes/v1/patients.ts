@@ -53,19 +53,19 @@ route(patientsRouter, 'post', '/invites/accept', { tag: 'invites', summary: 'Joi
 
 // ---- device pairing -------------------------------------------------------------------------------
 
-route(patientsRouter, 'get', '/patients/:patientId/device', { tag: 'devices', summary: 'Paired VOICE and its slots' }, async ({ user, params }) =>
+route(patientsRouter, 'get', '/patients/:patientId/device', { tag: 'devices', summary: 'Paired MIRA and its slots' }, async ({ user, params }) =>
   patientService.deviceStatus(user, params.patientId),
 );
 
-route(patientsRouter, 'put', '/patients/:patientId/device', { tag: 'devices', summary: 'Pair a VOICE by its code', body: devicePair }, async ({ user, params, body }) => {
+route(patientsRouter, 'put', '/patients/:patientId/device', { tag: 'devices', summary: 'Pair a MIRA by its code', body: devicePair }, async ({ user, params, body }) => {
   await patientService.pairDevice(params.patientId, body);
   return patientService.deviceStatus(user, params.patientId);
 });
 
-route(patientsRouter, 'delete', '/patients/:patientId/device', { tag: 'devices', summary: 'Unpair the VOICE', status: 204 }, async ({ params }) => {
+route(patientsRouter, 'delete', '/patients/:patientId/device', { tag: 'devices', summary: 'Unpair the MIRA', status: 204 }, async ({ params }) => {
   await patientService.unpairDevice(params.patientId);
 });
 
-route(patientsRouter, 'get', '/devices/nearby', { tag: 'devices', summary: 'VOICEs to offer when pairing' }, async ({ user }) =>
+route(patientsRouter, 'get', '/devices/nearby', { tag: 'devices', summary: 'MIRAs to offer when pairing' }, async ({ user }) =>
   patientService.nearbyDevices(user),
 );

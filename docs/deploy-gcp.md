@@ -1,11 +1,11 @@
-# Deploy VOICE on Google Cloud (free trial, about one month)
+# Deploy MIRA on Google Cloud (free trial, about one month)
 
-Everything (API, worker, MySQL, Redis, HTTPS; scan recognition calls Google Gemini) runs on one virtual machine with the production Docker setup. The VOICE device and the phone app reach it from any network with internet.
+Everything (API, worker, MySQL, Redis, HTTPS; scan recognition calls Google Gemini) runs on one virtual machine with the production Docker setup. The MIRA device and the phone app reach it from any network with internet.
 
 ```
  phone app ──HTTPS──► https://34-87-1-2.sslip.io ─┐
                                                   ├─► VM (Singapore): Caddy → api, worker, db, redis
- VOICE device ──HTTP──► http://34.87.1.2:5055/d/<secret> ─┘
+ MIRA device ──HTTP──► http://34.87.1.2:5055/d/<secret> ─┘
 ```
 
 ## 1. Create the account (once)
@@ -46,14 +46,14 @@ Copy the printed line → GitHub repo → **Settings → Deploy keys → Add dep
 git clone git@github.com:ArtisTechs/voice-prototype-medicine-reminder.git voice && cd voice
 ```
 
-## 5. Start VOICE
+## 5. Start MIRA
 ```bash
 bash deploy/server-setup.sh --demo
 ```
 `--demo` adds the demo account (demo@example.com / demo1234) and patient; leave it off for a clean start. The first run installs Docker, builds the images (10–20 min) and prints:
 ```
 App API (EXPO_PUBLIC_API_URL):  https://34-87-1-2.sslip.io
-VOICE device BACKEND_URL:       http://34.87.1.2:5055/d/3f9c...
+MIRA device BACKEND_URL:       http://34.87.1.2:5055/d/3f9c...
 ```
 Open `https://34-87-1-2.sslip.io/healthz` in a browser: it must show `"status":"ok"`.
 
@@ -64,7 +64,7 @@ In both ESP32 sketches set the printed value, then flash:
 ```cpp
 #define BACKEND_URL "http://34.87.1.2:5055/d/3f9c..."
 ```
-The device needs a Wi-Fi network with internet (home Wi-Fi or a phone hotspot). In the app, the person's **VOICE** screen turns **Online** within a minute.
+The device needs a Wi-Fi network with internet (home Wi-Fi or a phone hotspot). In the app, the person's **MIRA** screen turns **Online** within a minute.
 
 The secret in the URL is the device's password: the bare `/api/schedule`, `/api/scan` and `/api/events` answer 404 on this server.
 

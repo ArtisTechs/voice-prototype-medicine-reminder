@@ -10,7 +10,7 @@ const scan = (id: number, over: Record<string, unknown> = {}) => ({
   id, found: false, readName: null, readStrength: null, ocrExpiry: null, ...over,
 });
 
-describe('Scan with VOICE', () => {
+describe('Scan with MIRA', () => {
   const fetchMock = jest.fn();
   beforeEach(() => {
     jest.useFakeTimers();
@@ -37,13 +37,13 @@ describe('Scan with VOICE', () => {
     });
     const onRead = jest.fn();
     await open(onRead);
-    expect(screen.getByText('Waiting for your VOICE…')).toBeTruthy();
+    expect(screen.getByText('Waiting for your MIRA…')).toBeTruthy();
     for (let i = 0; i < 3; i++) await act(async () => { await jest.advanceTimersByTimeAsync(2100); });
     expect(onRead).toHaveBeenCalledWith({ name: 'Biogesic', strength: '500mg', expiry: '2027-05-31' });
     expect(fetchMock.mock.calls.some(([u, i]) => String(u).endsWith('/scans/5/learn') || (String(u).includes('/patients/5/scans/learn') && i?.method === 'POST'))).toBe(true);
   });
 
-  it('says so when the VOICE could not read the box and lets you try again', async () => {
+  it('says so when the MIRA could not read the box and lets you try again', async () => {
     let n = 0;
     fetchMock.mockImplementation((url: string) => {
       if (url.endsWith('/scans/learn')) return json(204, null);
@@ -52,10 +52,10 @@ describe('Scan with VOICE', () => {
     });
     await open();
     for (let i = 0; i < 2; i++) await act(async () => { await jest.advanceTimersByTimeAsync(2100); });
-    expect(screen.getByText("VOICE couldn't read that box")).toBeTruthy();
+    expect(screen.getByText("MIRA couldn't read that box")).toBeTruthy();
     expect(screen.getByLabelText('Try again')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Try again'));
     await act(async () => { await jest.advanceTimersByTimeAsync(10); });
-    expect(screen.getByText('Waiting for your VOICE…')).toBeTruthy();
+    expect(screen.getByText('Waiting for your MIRA…')).toBeTruthy();
   });
 });

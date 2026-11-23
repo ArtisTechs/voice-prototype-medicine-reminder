@@ -19,7 +19,7 @@ import { minTouch, radius, spacing } from '../../../../theme/tokens';
 const LINKS: { path: string; label: string; icon: keyof typeof Ionicons.glyphMap; tone: 'primary' | 'accent' | 'due' | 'expired' | 'lowStock' }[] = [
   { path: 'medicines', label: 'Medicines', icon: 'medkit', tone: 'primary' },
   { path: 'history', label: 'History', icon: 'bar-chart', tone: 'accent' },
-  { path: 'device', label: 'VOICE', icon: 'hardware-chip', tone: 'lowStock' },
+  { path: 'device', label: 'MIRA', icon: 'hardware-chip', tone: 'lowStock' },
   { path: 'scans', label: 'Scans', icon: 'camera', tone: 'expired' },
   { path: 'share', label: 'Family', icon: 'people', tone: 'due' },
 ];
@@ -88,7 +88,7 @@ export default function PatientToday() {
           <EmptyState
             icon="medkit-outline"
             title="No doses today"
-            message="Add a medicine with a slot and a dose time so VOICE can remind them."
+            message="Add a medicine with a slot and a dose time so MIRA can remind them."
             actionLabel="Add a medicine"
             onAction={() => router.push(`/patients/${pid}/medicine/new`)}
           />

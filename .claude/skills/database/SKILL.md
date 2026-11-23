@@ -25,7 +25,7 @@ model Medicine {
 - Integer `id` PKs (the device needs small stable ints). Plural snake_case tables and columns via `@@map` / `@map`; camelCase in code.
 - Every FK has an explicit `onDelete`. Deleting a `Patient` (or `User`, `Device`) cascades through everything under it; the tests rely on that to empty the database.
 - Status-like columns are `VarChar` + validation in zod/services (no MySQL enums, no CHECK constraints: Prisma cannot model them).
-- **MySQL has no partial indexes.** "One active medicine per slot per VOICE" is enforced in `medicineService.checkSlot` and `patientService.pairDevice`, not by the database.
+- **MySQL has no partial indexes.** "One active medicine per slot per MIRA" is enforced in `medicineService.checkSlot` and `patientService.pairDevice`, not by the database.
 - `Json` columns have no DB default: always set them in code (`slotState: {}`, `daysOfWeek`, `notifyPrefs`, `data`, `result`, `timings`).
 
 ## Time
@@ -36,7 +36,7 @@ model Medicine {
 - Never convert local time to UTC with a fixed `+8` in application code except in tests (`ph()` helper); production code uses `DEVICE_TZ` through `Intl`.
 
 ## Tables
-`users, refresh_tokens, push_tokens, patients, patient_caregivers, invites, devices, medicines, schedules, reference_images, device_events, intake_records, alerts, scans`. ER diagram in `docs/architecture.md`. Patients point at their VOICE (`patients.device_id`); several patients can share one device.
+`users, refresh_tokens, push_tokens, patients, patient_caregivers, invites, devices, medicines, schedules, reference_images, device_events, intake_records, alerts, scans`. ER diagram in `docs/architecture.md`. Patients point at their MIRA (`patients.device_id`); several patients can share one device.
 
 ## Key indexes and constraints
 - `device_events`: unique `(device_id, type, dose_id, local_time)` (`uq_device_events_idem`), `dose_id` NOT NULL default 0.

@@ -22,7 +22,7 @@ import { spacing } from '../../../../theme/tokens';
 const code = z
   .string()
   .trim()
-  .min(2, 'Enter the code shown on VOICE.')
+  .min(2, 'Enter the code shown on MIRA.')
   .max(32, 'Use 32 characters or fewer.')
   .regex(/^[A-Za-z0-9_-]+$/, 'Use only letters, numbers, - or _.');
 const schema = z.object({ deviceId: code, cameraId: z.union([code, z.literal('')]) });
@@ -46,24 +46,24 @@ function PairForm({ pid, initial, onDone }: { pid: number; initial?: Values; onD
   });
   return (
     <Card>
-      <AppText variant="title">Type the VOICE code</AppText>
-      <AppText>The demo VOICE uses “pillbox”.</AppText>
+      <AppText variant="title">Type the MIRA code</AppText>
+      <AppText>The demo MIRA uses “pillbox”.</AppText>
       {formError ? <Banner tone="error" message={formError} /> : null}
-      <FormTextField control={control} name="deviceId" label="VOICE code" autoCapitalize="none" autoCorrect={false} />
+      <FormTextField control={control} name="deviceId" label="MIRA code" autoCapitalize="none" autoCorrect={false} />
       <FormTextField
         control={control}
         name="cameraId"
         label="Camera code (optional)"
-        helper="Leave empty to use the VOICE code + “-cam”."
+        helper="Leave empty to use the MIRA code + “-cam”."
         autoCapitalize="none"
         autoCorrect={false}
       />
-      <Button title="Connect VOICE" icon="link" onPress={() => onSubmit()} loading={pair.isPending} />
+      <Button title="Connect MIRA" icon="link" onPress={() => onSubmit()} loading={pair.isPending} />
     </Card>
   );
 }
 
-/** Found VOICEs to tap, with typing the code as the fallback. */
+/** Found MIRAs to tap, with typing the code as the fallback. */
 function Connect({ pid, currentId, onDone }: { pid: number; currentId?: string; onDone?: () => void }) {
   const nearby = useNearbyDevices();
   const pair = usePairDevice(pid);
@@ -71,8 +71,8 @@ function Connect({ pid, currentId, onDone }: { pid: number; currentId?: string; 
   const connect = (deviceId: string) => pair.mutate({ deviceId }, { onSuccess: onDone });
   return (
     <>
-      <AppText variant="title">{currentId ? 'Move to another VOICE' : 'Connect VOICE'}</AppText>
-      <AppText muted>One VOICE can remind several people. Each person needs their own slots.</AppText>
+      <AppText variant="title">{currentId ? 'Move to another MIRA' : 'Connect MIRA'}</AppText>
+      <AppText muted>One MIRA can remind several people. Each person needs their own slots.</AppText>
       {pair.isError ? <Banner tone="error" message={errorMessage(pair.error)} /> : null}
       <VoicePicker
         devices={nearby.data}
@@ -102,9 +102,9 @@ export default function DeviceScreen() {
 
   const confirmUnpair = () =>
     dialog.confirm({
-      title: 'Remove from this VOICE?',
+      title: 'Remove from this MIRA?',
       message: others.length
-        ? 'This person stops getting reminders. The others on this VOICE keep theirs.'
+        ? 'This person stops getting reminders. The others on this MIRA keep theirs.'
         : 'It will stop getting the schedule until it is connected again.',
       confirmLabel: 'Remove',
       cancelLabel: 'Keep it',
@@ -115,7 +115,7 @@ export default function DeviceScreen() {
 
   return (
     <Screen refreshing={q.isRefetching} onRefresh={q.refetch}>
-      <Stack.Screen options={{ title: 'VOICE' }} />
+      <Stack.Screen options={{ title: 'MIRA' }} />
       {q.isPending ? (
         <CardSkeleton lines={5} />
       ) : notPaired ? (
@@ -134,19 +134,19 @@ export default function DeviceScreen() {
             <AppText>Last checked in: {ago(q.data.lastSeen)}</AppText>
             <AppText muted>Camera ({q.data.cameraId}): last used {ago(q.data.cameraLastSeen)}</AppText>
             {q.data.status === 'offline' ? (
-              <Banner tone="warning" message="Check that VOICE is plugged in and the WiFi is working." />
+              <Banner tone="warning" message="Check that MIRA is plugged in and the WiFi is working." />
             ) : null}
           </Card>
           {others.length ? (
             <Card>
-              <AppText variant="title">People on this VOICE</AppText>
+              <AppText variant="title">People on this MIRA</AppText>
               {q.data.people.map((p, i) => (
                 <AppText key={p.patientId ?? `other-${i}`} variant={p.current ? 'bodyStrong' : 'body'}>
                   {p.name}
                   {p.current ? ' (this person)' : ''}
                 </AppText>
               ))}
-              <AppText muted>On VOICE, each medicine starts with the person's first name.</AppText>
+              <AppText muted>On MIRA, each medicine starts with the person's first name.</AppText>
             </Card>
           ) : null}
           <AppText variant="title">Slots</AppText>
@@ -167,9 +167,9 @@ export default function DeviceScreen() {
           {changing ? (
             <Connect pid={pid} currentId={q.data.deviceId} onDone={() => setChanging(false)} />
           ) : (
-            <Button title="Move to another VOICE" variant="secondary" icon="swap-horizontal" onPress={() => setChanging(true)} />
+            <Button title="Move to another MIRA" variant="secondary" icon="swap-horizontal" onPress={() => setChanging(true)} />
           )}
-          <Button title="Remove from this VOICE" variant="danger" onPress={confirmUnpair} loading={unpair.isPending} />
+          <Button title="Remove from this MIRA" variant="danger" onPress={confirmUnpair} loading={unpair.isPending} />
         </>
       )}
     </Screen>

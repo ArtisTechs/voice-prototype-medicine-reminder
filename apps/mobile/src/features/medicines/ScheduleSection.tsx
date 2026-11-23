@@ -52,7 +52,7 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
   const remove = (s: Schedule) =>
     dialog.confirm({
       title: `Remove the ${fmtClock(s.time)} dose?`,
-      message: 'VOICE will stop reminding at this time.',
+      message: 'MIRA will stop reminding at this time.',
       confirmLabel: 'Remove',
       cancelLabel: 'Keep it',
       tone: 'danger',
@@ -64,7 +64,7 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
     <View style={styles.wrap}>
       <AppText variant="title">Dose times</AppText>
       {!medicine.slot ? (
-        <Banner tone="warning" message="This medicine has no VOICE slot, so VOICE will not remind at these times." />
+        <Banner tone="warning" message="This medicine has no MIRA slot, so MIRA will not remind at these times." />
       ) : null}
       {medicine.schedules.length === 0 && editing === null ? <AppText muted>No dose times yet.</AppText> : null}
       {medicine.schedules.map((s) => (
@@ -83,7 +83,7 @@ export function ScheduleSection({ pid, medicine }: { pid: number; medicine: Medi
           <TimeField label="Time" value={time} onChange={setTime} />
           <ChoiceGroup<number>
             label="Days"
-            helper="VOICE currently reminds every day; other days are saved for later."
+            helper="MIRA currently reminds every day; other days are saved for later."
             multiple
             values={days}
             onToggle={(d) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort()))}

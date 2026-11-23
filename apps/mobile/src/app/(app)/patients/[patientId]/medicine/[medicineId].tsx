@@ -26,7 +26,7 @@ export default function EditMedicine() {
   const confirmDelete = () =>
     dialog.confirm({
       title: `Delete ${med.data?.label}?`,
-      message: 'It leaves the VOICE schedule. Past history is kept.',
+      message: 'It leaves the MIRA schedule. Past history is kept.',
       confirmLabel: 'Delete',
       cancelLabel: 'Keep it',
       tone: 'danger',

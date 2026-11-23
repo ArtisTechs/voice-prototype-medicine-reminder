@@ -95,7 +95,7 @@ describe('patients', () => {
     expect((await api().get(`/api/v1/patients/${patient.id}/device`).set(auth(user))).body.status).toBe('offline');
   });
 
-  it("refuses a code that is another VOICE's camera with 409 device_taken", async () => {
+  it("refuses a code that is another MIRA's camera with 409 device_taken", async () => {
     const a = await makeUser();
     const b = await makeUser();
     const pa = await makePatient(a);
@@ -120,7 +120,7 @@ describe('patients', () => {
     expect((await api().get('/api/schedule').query({ device: 'pillbox' })).status).toBe(403);
   });
 
-  it('deleting an account removes orphaned patients, their files and their VOICE, and hands shared patients on', async () => {
+  it('deleting an account removes orphaned patients, their files and their MIRA, and hands shared patients on', async () => {
     const me = await makeUser();
     const other = await makeUser();
     const mine = await makePatient(me);
@@ -138,7 +138,7 @@ describe('patients', () => {
     expect(await prisma.user.findUnique({ where: { id: me.id } })).toBeNull();
     expect(await prisma.patient.count({ where: { id: mine.id } })).toBe(0);
     expect(await prisma.medicine.count({ where: { id: med.id } })).toBe(0);
-    expect(await prisma.device.count({ where: { deviceId: 'pillbox' } })).toBe(0); // nobody else used that VOICE
+    expect(await prisma.device.count({ where: { deviceId: 'pillbox' } })).toBe(0); // nobody else used that MIRA
     await expect(fs.access(full)).rejects.toThrow();
     expect(await prisma.patient.count({ where: { id: shared.id } })).toBe(1);
     expect((await api().get(`/api/v1/patients/${shared.id}`).set(auth(other))).body.role).toBe('owner');

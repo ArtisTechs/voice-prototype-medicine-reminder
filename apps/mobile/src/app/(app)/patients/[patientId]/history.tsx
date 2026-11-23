@@ -68,7 +68,7 @@ export default function HistoryScreen() {
       ) : q.isError ? (
         <ErrorState error={q.error} onRetry={q.refetch} />
       ) : !hasData ? (
-        <EmptyState icon="calendar-outline" title="Nothing recorded yet" message="Doses show up here once VOICE reports them." />
+        <EmptyState icon="calendar-outline" title="Nothing recorded yet" message="Doses show up here once MIRA reports them." />
       ) : (
         <>
           <Card>

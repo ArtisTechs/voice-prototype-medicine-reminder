@@ -16,8 +16,8 @@ route(scansRouter, 'get', S, { tag: 'scans', summary: 'Camera scans of a patient
   return { items: items.map((s) => scanService.scanOut(s, names)), total, limit: query.limit, offset: query.offset };
 });
 
-/** The add-medicine screen asks the VOICE to read the next package it sees; the result is the newest scan (readName, readStrength). */
-route(scansRouter, 'post', `${S}/learn`, { tag: 'scans', summary: 'Wait for the next scan from this VOICE (add a medicine by scanning it)', status: 204 }, async ({ params }) => {
+/** The add-medicine screen asks the MIRA to read the next package it sees; the result is the newest scan (readName, readStrength). */
+route(scansRouter, 'post', `${S}/learn`, { tag: 'scans', summary: 'Wait for the next scan from this MIRA (add a medicine by scanning it)', status: 204 }, async ({ params }) => {
   await scanService.armLearn(params.patientId);
 });
 

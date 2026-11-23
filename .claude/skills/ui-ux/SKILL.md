@@ -33,7 +33,7 @@ Caregivers, often family members who are not technical, and some of them older. 
 - **Radius:** `sm 10, md 14, lg 20, xl 28, pill`. Buttons, chips and badges are pills; cards use `lg`.
 - **Elevation:** `<Card>` has a soft shadow in light mode and a 1 px border in dark mode (shadows vanish on dark). `tone="tinted"` (primarySoft) highlights one thing per screen, such as "Next dose".
 - **Neutral colors:** `bg, surface, surfaceAlt, border, text, textMuted, primary, primarySoft, onPrimary, accent, accentSoft, danger, focus, shadow` (light + dark in `tokens.ts`). Primary = `#02547A` light / `#8FD3F4` dark (the logo blue). Every pair is checked by `__tests__/contrast.test.ts`.
-- **Brand:** the app and the device are both **VOICE**. `<Brand>` (sign-in/sign-up) shows the app icon. Every icon and the splash are generated from the logo in `tools/icons/logo-source.png` by `node tools/icons/make_icons.mjs`; replace that file and re-run to change them.
+- **Brand:** the app and the device are both **MIRA**. `<Brand>` (sign-in/sign-up) shows the app icon. Every icon and the splash are generated from the logo in `tools/icons/logo-source.png` by `node tools/icons/make_icons.mjs`; replace that file and re-run to change them.
 - **Decor:** `IconCircle` (icon on a soft tinted square, decorative), `Avatar` (initials), `SectionHeader`. Home leads with a greeting; patient screens lead with "Next up", then doses grouped Morning / Afternoon / Evening.
 - **Themes:** follow the system (`useColorScheme`), with an override in Settings (System/Light/Dark).
 
@@ -43,12 +43,12 @@ Caregivers, often family members who are not technical, and some of them older. 
 ## States (every data screen has all four)
 1. **Loading:** `Skeleton` shapes that match the final layout. No bare spinners for full screens.
 2. **Empty:** an icon + a one-line explanation + one primary action ("No medicines yet. Add the first one.").
-3. **Error:** `ErrorState` with a plain message ("We couldn't reach the VOICE server.") + a **Try again** button that calls `refetch()`.
+3. **Error:** `ErrorState` with a plain message ("We couldn't reach the MIRA server.") + a **Try again** button that calls `refetch()`.
 4. **Content:** with pull-to-refresh.
 Offline API (network error) shows a top `Banner`, and cached data stays visible.
 
 ## Language
-- **Plain words:** "VOICE" (the device is never called "pillbox" in the UI), "Medicine", "Taken", "Missed", "Running low". Never "event", "payload", "sync", or "device id" (say "VOICE code"). The firmware's fixed id `pillbox` is data, not a name.
+- **Plain words:** "MIRA" (the device is never called "pillbox" in the UI), "Medicine", "Taken", "Missed", "Running low". Never "event", "payload", "sync", or "device id" (say "MIRA code"). The firmware's fixed id `pillbox` is data, not a name.
 - **Sentence case.** Times are shown in the caregiver's 12-hour format with AM/PM ("8:00 AM"), relative where helpful ("12 min late").
 - **Errors** say what happened and what to do: "That code has expired. Ask for a new one."
 - **Destructive actions** use a `ConfirmDialog` that names the thing: "Delete Losartan 50mg?"

@@ -100,12 +100,12 @@ export async function acceptInvite(user: User, code: string): Promise<Patient> {
 // ---- devices -----------------------------------------------------------------------------------
 
 function checkCodes(deviceId: string, cameraId: string): void {
-  if (deviceId === cameraId) throw badRequest('invalid_device', 'The VOICE and camera codes must be different.');
+  if (deviceId === cameraId) throw badRequest('invalid_device', 'The MIRA and camera codes must be different.');
 }
 
 /**
- * Put the person on a VOICE. A VOICE can serve several people; their medicines share its 5 slots.
- * Moving to another VOICE leaves the old one, which is deleted once nobody uses it.
+ * Put the person on a MIRA. A MIRA can serve several people; their medicines share its 5 slots.
+ * Moving to another MIRA leaves the old one, which is deleted once nobody uses it.
  */
 export async function pairDevice(patientId: number, data: { deviceId: string; cameraId?: string | null }): Promise<Device> {
   const { device, pids } = await prisma.$transaction(async (tx) => {
@@ -116,14 +116,14 @@ export async function pairDevice(patientId: number, data: { deviceId: string; ca
       const cameraId = data.cameraId || `${data.deviceId}-cam`;
       checkCodes(data.deviceId, cameraId);
       if ((await deviceRepo.byAnyId(data.deviceId, tx)) || (await deviceRepo.byAnyId(cameraId, tx))) {
-        throw conflict('device_taken', 'That code belongs to another VOICE. Check the code and try again.');
+        throw conflict('device_taken', 'That code belongs to another MIRA. Check the code and try again.');
       }
       dev = await deviceRepo.create(data.deviceId, cameraId, tx);
     } else {
       if (data.cameraId && data.cameraId !== dev.cameraId) {
         checkCodes(dev.deviceId, data.cameraId);
         const clash = await deviceRepo.byAnyId(data.cameraId, tx);
-        if (clash && clash.id !== dev.id) throw conflict('device_taken', 'That camera code belongs to another VOICE.');
+        if (clash && clash.id !== dev.id) throw conflict('device_taken', 'That camera code belongs to another MIRA.');
         dev = await deviceRepo.setCamera(dev.id, data.cameraId, tx);
       }
       const others = (await deviceRepo.patientsOn(dev.id, tx)).filter((p) => p.id !== patientId).map((p) => p.id);
@@ -134,7 +134,7 @@ export async function pairDevice(patientId: number, data: { deviceId: string; ca
         if (overlap.length) {
           throw conflict(
             'slot_taken',
-            `Slot ${overlap.join(', ')} on this VOICE is already used by another person. Move ${patient.displayName}'s medicine to a free slot first.`,
+            `Slot ${overlap.join(', ')} on this MIRA is already used by another person. Move ${patient.displayName}'s medicine to a free slot first.`,
           );
         }
       }
@@ -149,7 +149,7 @@ export async function pairDevice(patientId: number, data: { deviceId: string; ca
   return device;
 }
 
-/** Takes only this person off the VOICE. Others on it keep using it. */
+/** Takes only this person off the MIRA. Others on it keep using it. */
 export async function unpairDevice(patientId: number): Promise<void> {
   const others = await prisma.$transaction(async (tx) => {
     const patient = (await patientRepo.byId(patientId, tx)) as Patient;
@@ -169,7 +169,7 @@ export function isOnline(device: Pick<Device, 'lastSeen'> | null | undefined): b
 
 export async function deviceStatus(user: User, patientId: number) {
   const device = await deviceRepo.forPatient(patientId);
-  if (!device) throw notFound('no_device', 'No VOICE is paired yet.');
+  if (!device) throw notFound('no_device', 'No MIRA is paired yet.');
   const people = await deviceRepo.patientsOn(device.id);
   const visible = new Set((await patientRepo.forUser(user.id)).map((r) => r.patient.id));
   const names = new Map(people.map((p) => [p.id, visible.has(p.id) ? p.displayName : OTHER_PERSON]));
@@ -185,7 +185,7 @@ export async function deviceStatus(user: User, patientId: number) {
       slot: n,
       medicineId: mine ? m!.id : null,
       medicineName: mine ? medicineLabel(m!) : null,
-      // Whose medicine it is when the VOICE is shared ("Another person" for people you don't look after).
+      // Whose medicine it is when the MIRA is shared ("Another person" for people you don't look after).
       personName: m && shared ? names.get(m.patientId) ?? null : null,
       lidOpen: s.lidOpen ?? null,
       lastEventAt: s.at ?? null,
@@ -203,7 +203,7 @@ export async function deviceStatus(user: User, patientId: number) {
 }
 
 /**
- * VOICEs to offer when pairing: unpaired ones polling right now, paired ones checking in now, and the
+ * MIRAs to offer when pairing: unpaired ones polling right now, paired ones checking in now, and the
  * ones the caregiver's people already use. Unpaired first, then yours, newest first.
  */
 export async function nearbyDevices(user: User) {

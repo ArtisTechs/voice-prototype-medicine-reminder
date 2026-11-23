@@ -23,7 +23,7 @@ export type Slot = {
   slot: number;
   medicineId: number | null;
   medicineName: string | null;
-  /** Whose medicine it is when the VOICE is shared ("Another person" for people you don't look after). */
+  /** Whose medicine it is when the MIRA is shared ("Another person" for people you don't look after). */
   personName: string | null;
   lidOpen: boolean | null;
   lastEventAt: string | null;
@@ -38,7 +38,7 @@ export type Device = {
   slots: Slot[];
   people: DevicePerson[];
 };
-/** A VOICE to offer when pairing: an unpaired one checking in now, or one already in use. */
+/** A MIRA to offer when pairing: an unpaired one checking in now, or one already in use. */
 export type NearbyDevice = {
   deviceId: string;
   paired: boolean;

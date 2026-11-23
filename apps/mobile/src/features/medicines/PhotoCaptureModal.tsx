@@ -53,7 +53,7 @@ export function PhotoCaptureModal({ visible, angle, onClose, onCaptured, title, 
       <SafeAreaView style={[styles.flex, { backgroundColor: colors.bg }]}>
         <View style={styles.header}>
           <AppText variant="title">{title ?? `Photo of the ${ANGLE_WORDS[angle] ?? 'box'}`}</AppText>
-          <AppText muted>{hint ?? 'Good light, box fills the frame, name easy to read. The VOICE camera uses these to recognise the box.'}</AppText>
+          <AppText muted>{hint ?? 'Good light, box fills the frame, name easy to read. The MIRA camera uses these to recognise the box.'}</AppText>
         </View>
         {!permission ? null : !permission.granted ? (
           <CameraPermissionNotice reason="The camera is needed to take package photos." canAskAgain={permission.canAskAgain} onAllow={requestPermission} />

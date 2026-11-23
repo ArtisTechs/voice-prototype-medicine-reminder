@@ -74,7 +74,7 @@ model Patient {
   id          Int      @id @default(autoincrement())
   displayName String   @map("display_name") @db.VarChar(60)
   note        String?  @db.VarChar(200)
-  // The VOICE this person uses. Several people can share one VOICE (its 5 slots are shared).
+  // The MIRA this person uses. Several people can share one MIRA (its 5 slots are shared).
   deviceId    Int?     @map("device_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -131,7 +131,7 @@ model Medicine {
   doseAmount        Int       @default(1) @map("dose_amount") @db.SmallInt
   doseUnit          String?   @map("dose_unit") @db.VarChar(20)
   instructions      String?   @db.VarChar(200)
-  // 1-5 or null. Unique per VOICE among active medicines: enforced in medicine_service (MySQL has no partial index).
+  // 1-5 or null. Unique per MIRA among active medicines: enforced in medicine_service (MySQL has no partial index).
   slot              Int?      @db.SmallInt
   barcode           String?   @db.VarChar(64)
   expiryDate        DateTime? @map("expiry_date") @db.Date

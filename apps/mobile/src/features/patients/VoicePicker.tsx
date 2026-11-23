@@ -9,14 +9,14 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { spacing } from '../../theme/tokens';
 
 export function describe(d: NearbyDevice): string {
-  if (!d.paired) return 'New VOICE, ready to connect';
+  if (!d.paired) return 'New MIRA, ready to connect';
   const who = d.people === 1 ? '1 person on it' : `${d.people} people on it`;
   return d.mine ? `${who}, including someone you look after` : who;
 }
 
 type Props = {
   devices: NearbyDevice[] | undefined;
-  /** The VOICE the person is on now, left out of the list. */
+  /** The MIRA the person is on now, left out of the list. */
   currentId?: string;
   selectedId?: string | null;
   pendingId?: string | null;
@@ -24,7 +24,7 @@ type Props = {
   onPick: (deviceId: string) => void;
 };
 
-/** VOICEs found on the network (they show up by themselves within a minute) to tap and connect. */
+/** MIRAs found on the network (they show up by themselves within a minute) to tap and connect. */
 export function VoicePicker({ devices, currentId, selectedId, pendingId, actionLabel, onPick }: Props) {
   const { colors } = useTheme();
   const list = (devices ?? []).filter((d) => d.deviceId !== currentId);
@@ -32,12 +32,12 @@ export function VoicePicker({ devices, currentId, selectedId, pendingId, actionL
     return (
       <Card>
         <View style={styles.row}>
-          <ActivityIndicator color={colors.primary} accessibilityLabel="Looking for VOICE" />
+          <ActivityIndicator color={colors.primary} accessibilityLabel="Looking for MIRA" />
           <AppText variant="bodyStrong" style={styles.flex}>
-            Looking for VOICE…
+            Looking for MIRA…
           </AppText>
         </View>
-        <AppText muted>Switch VOICE on and connect it to the same WiFi. It shows up here by itself within a minute.</AppText>
+        <AppText muted>Switch MIRA on and connect it to the same WiFi. It shows up here by itself within a minute.</AppText>
       </Card>
     );
   }

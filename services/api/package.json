@@ -2,7 +2,7 @@
   "name": "voice-api",
   "version": "1.0.0",
   "private": true,
-  "description": "VOICE medicine reminder API + worker (Express, MySQL, Gemini)",
+  "description": "MIRA medicine reminder API + worker (Express, MySQL, Gemini)",
   "engines": {
     "node": ">=22"
   },

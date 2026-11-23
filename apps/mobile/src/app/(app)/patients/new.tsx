@@ -24,7 +24,7 @@ export default function NewPatient() {
   const pair = usePairDevice();
   const dialog = useDialog();
   const nearby = useNearbyDevices();
-  // undefined = not chosen yet: a new VOICE (or one you already use) is picked for you.
+  // undefined = not chosen yet: a new MIRA (or one you already use) is picked for you.
   const [picked, setPicked] = useState<string | null | undefined>(undefined);
   const first = nearby.data?.find((d) => !d.paired || d.mine);
   const voice = picked === undefined ? (first?.deviceId ?? null) : picked;
@@ -48,7 +48,7 @@ export default function NewPatient() {
         router.replace(`/patients/${id}`);
         return;
       } catch (e) {
-        dialog.notify({ title: 'Person added, VOICE not connected', message: errorMessage(e), tone: 'warning' });
+        dialog.notify({ title: 'Person added, MIRA not connected', message: errorMessage(e), tone: 'warning' });
       }
     }
     router.replace(`/patients/${id}/device`);
@@ -59,9 +59,9 @@ export default function NewPatient() {
       {formError ? <Banner tone="error" message={formError} /> : null}
       <FormTextField control={control} name="displayName" label="Name" helper='What you call them, e.g. "Lola Rosa".' />
       <FormTextField control={control} name="note" label="Note (optional)" multiline />
-      <AppText variant="title">Which VOICE?</AppText>
-      <AppText muted>Several people can share one VOICE. You can change this later.</AppText>
-      <VoicePicker devices={nearby.data} selectedId={voice} actionLabel="Use this VOICE" onPick={setPicked} />
+      <AppText variant="title">Which MIRA?</AppText>
+      <AppText muted>Several people can share one MIRA. You can change this later.</AppText>
+      <VoicePicker devices={nearby.data} selectedId={voice} actionLabel="Use this MIRA" onPick={setPicked} />
       {voice ? <Button title="Choose later" variant="ghost" onPress={() => setPicked(null)} /> : null}
       <Button
         title={voice ? `Add person to ${voice}` : 'Add person'}

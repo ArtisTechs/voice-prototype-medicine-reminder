@@ -38,12 +38,12 @@ export function scanAnswer(med: Medicine): ScanFound {
   };
 }
 
-// ---- "add a medicine by scanning it on the VOICE" -------------------------------------------------
+// ---- "add a medicine by scanning it on the MIRA" -------------------------------------------------
 
 const LEARN_SECONDS = 180;
 const learnKey = (patientId: number) => `scan:learn:${patientId}`;
 
-/** The app is open on the add-medicine screen and waiting for the next scan from this person's VOICE. */
+/** The app is open on the add-medicine screen and waiting for the next scan from this person's MIRA. */
 export async function armLearn(patientId: number): Promise<void> {
   await redis().set(learnKey(patientId), '1', 'EX', LEARN_SECONDS);
 }
@@ -89,7 +89,7 @@ export async function scan(deviceIdent: string | undefined, data: Buffer | undef
   const rel = storage.newRelPath('scans', now);
   await storage.writeBytes(rel, data);
 
-  // A shared VOICE can hold anyone's medicine. An unknown package goes to the first person.
+  // A shared MIRA can hold anyone's medicine. An unknown package goes to the first person.
   const pids = await deviceService.patientIds(device);
   const meds: Medicine[] = [];
   for (const pid of pids) meds.push(...(await medRepo.listForPatient(pid)));
@@ -155,7 +155,7 @@ export interface PackageRead {
   reason: string | null;
 }
 
-/** Same reader as the VOICE scan, for a photo from the caregiver's phone. The photo is not stored. */
+/** Same reader as the MIRA scan, for a photo from the caregiver's phone. The photo is not stored. */
 export async function readPackage(image: Buffer): Promise<PackageRead> {
   if (!storage.isImage(image)) throw unsupportedMedia('Send a JPEG or PNG photo.');
   let jpeg: Buffer;

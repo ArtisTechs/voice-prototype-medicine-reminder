@@ -25,7 +25,7 @@ export interface Match {
   method: 'llm' | 'ocr' | 'none';
   score: number | null;
   readExpiry: string | null;
-  /** What Gemini read on the package, kept for the add-medicine "scan with VOICE" flow. */
+  /** What Gemini read on the package, kept for the add-medicine "scan with MIRA" flow. */
   readName?: string | null;
   readStrength?: string | null;
   /** The name or match came from how the package looks, not from printed text: show it to people as a guess. */

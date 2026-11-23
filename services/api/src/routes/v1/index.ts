@@ -15,7 +15,7 @@ v1Router.use(express.json({ limit: '100kb' }));
 
 /** Public, no personal data. The app's first screen calls this to show the server is reachable. */
 route(v1Router, 'get', '/meta', { tag: 'meta', summary: 'Server reachable?', auth: false }, async () => ({
-  name: 'VOICE API',
+  name: 'MIRA API',
   version: '1.0.0',
   deviceTz: settings().DEVICE_TZ,
   serverTime: deviceIso(),
